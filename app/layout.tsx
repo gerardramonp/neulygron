@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import ThemeToggle from "./components/ThemeToggle";
+import AppNavigation from "./components/AppNavigation";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { THEME_COOKIE, type Theme } from "@/lib/theme/config";
@@ -37,7 +38,10 @@ export default async function RootLayout({
       >
         <NextIntlClientProvider>
           <ThemeToggle />
-          {children}
+          <div className="min-h-screen bg-background text-foreground md:flex">
+            <AppNavigation />
+            <div className="flex-1 min-h-screen pb-24 md:pb-0">{children}</div>
+          </div>
         </NextIntlClientProvider>
       </body>
     </html>

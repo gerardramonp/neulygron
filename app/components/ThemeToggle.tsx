@@ -35,7 +35,7 @@ export default function ThemeToggle() {
   const selectedThemeClass = "font-semibold ring-1 ring-ring";
 
   return (
-    <div className="fixed top-4 left-4 z-50 flex items-center gap-2 rounded-full border border-border px-2 py-1 text-sm bg-background text-foreground backdrop-blur">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border px-2 py-1 text-sm bg-background text-foreground backdrop-blur">
       <span className="opacity-70">Theme:</span>
       <button
         type="button"

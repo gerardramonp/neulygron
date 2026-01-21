@@ -1,5 +1,11 @@
 {
   "HomePage": {
     "title": "Hello world!"
+  },
+  "ConfigPage": {
+    "label": "Configuration",
+    "title": "Control center",
+    "description": "Tune preferences, defaults, and behavior for your workspace.",
+    "placeholder": "Add your configuration controls here—toggles, dropdowns, or any component you need."
   }
 }

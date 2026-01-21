@@ -1,5 +1,11 @@
 {
   "HomePage": {
     "title": "Hola mundo!"
+  },
+  "ConfigPage": {
+    "label": "Configuración",
+    "title": "Centro de control",
+    "description": "Ajusta preferencias, valores predeterminados y el comportamiento de tu espacio de trabajo.",
+    "placeholder": "Agrega aquí tus controles de configuración: interruptores, selectores o cualquier componente que necesites."
   }
 }
