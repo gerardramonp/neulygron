@@ -4,7 +4,7 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const nextConfig: NextConfig = {
   i18n: {
-    locales: ["en", "fr", "de"],
+    locales: ["en", "es"],
     defaultLocale: "en",
   }
 };
