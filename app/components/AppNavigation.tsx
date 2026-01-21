@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { Home, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "Home", href: "/" },
-  { label: "Config", href: "/config" },
+  { label: "Home", href: "/", icon: Home },
+  { label: "Config", href: "/config", icon: Settings },
 ];
 
 export default function AppNavigation() {
@@ -28,12 +29,13 @@ export default function AppNavigation() {
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
                   className={clsx(
-                    "group rounded-2xl border px-4 py-3 text-sm font-medium transition-colors",
+                    "group rounded-2xl border px-4 py-3 text-sm font-medium transition-colors flex items-center gap-3",
                     isActive
-                      ? "border-border bg-sidebar-primary text-sidebar-primary-foreground shadow"
-                      : "border-transparent bg-sidebar-accent text-sidebar-accent-foreground hover:border-border",
+                      ? "border-border bg-sidebar-accent text-sidebar-accent-foreground shadow"
+                      : "border-transparent hover:border-border",
                   )}
                 >
+                  <item.icon className="w-5 h-5" />
                   <div>{item.label}</div>
                 </Link>
               );
