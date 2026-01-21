@@ -1,53 +1,73 @@
-import Image from "next/image";
-
 import { useTranslations } from "next-intl";
 
 export default function Home() {
   const t = useTranslations("HomePage");
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50"></h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            {t("title")}
+    <main className="min-h-screen bg-background text-foreground font-sans px-6 py-10">
+      <div className="max-w-3xl mx-auto space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">
+            This page demonstrates Tailwind utilities mapped to CSS variables
+            that switch with light/dark.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        </header>
+
+        <section className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card text-card-foreground p-6">
+            <h2 className="font-semibold mb-2">Card surface</h2>
+            <p className="text-sm text-muted-foreground">
+              Uses <span className="font-mono">bg-card</span>,
+              <span className="font-mono">text-card-foreground</span>, and
+              <span className="font-mono">border-border</span>.
+            </p>
+          </div>
+
+          <div className="rounded-lg p-6 bg-muted border border-border">
+            <h2 className="font-semibold mb-2">Muted block</h2>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-mono">bg-muted</span> and
+              <span className="font-mono">text-muted-foreground</span> for
+              secondary content.
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-semibold">Buttons</h2>
+          <div className="flex flex-wrap gap-3">
+            <button className="rounded-md bg-primary text-primary-foreground px-3 py-2 hover:opacity-90">
+              Primary
+            </button>
+            <button className="rounded-md bg-secondary text-secondary-foreground px-3 py-2 hover:opacity-90">
+              Secondary
+            </button>
+            <button className="rounded-md bg-accent text-accent-foreground px-3 py-2 hover:opacity-90">
+              Accent
+            </button>
+            <button className="rounded-md bg-destructive text-destructive-foreground px-3 py-2 hover:opacity-90">
+              Destructive
+            </button>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-semibold">Form controls</h2>
+          <div className="space-y-2">
+            <label className="text-sm">Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="w-full rounded-md border border-input bg-background text-foreground px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            SOME TEXT
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            SOME TEXT
-          </a>
-        </div>
-      </main>
-    </div>
+          </div>
+        </section>
+
+        <footer className="text-xs text-muted-foreground">
+          Toggle theme using the switch in the corner.
+        </footer>
+      </div>
+    </main>
   );
 }

@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Light/Dark Theme
+
+Tailwind dark mode is enabled via a simple `theme` cookie and the `dark` class on the `<html>` element.
+
+- Toggle globally using the floating ThemeToggle.
+- Choices: `Light`, `Dark`, or `System`.
+- Stored in `theme` cookie; SSR sets the `<html class="dark">` when `Dark` is chosen.
+- Tailwind `dark:` variants and CSS variables in `app/globals.css` handle styles.
+
+To style components:
+
+- Use Tailwind variants like `bg-white dark:bg-black`.
+- Or bind to CSS variables defined in `app/globals.css`.
