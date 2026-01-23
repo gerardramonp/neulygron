@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Home, Settings } from "lucide-react";
+import { Home, Settings, User2 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -45,7 +45,7 @@ export default function AppNavigation() {
       </aside>
 
       <nav className="md:hidden fixed inset-x-0 bottom-4 z-40 flex justify-center">
-        <div className="flex gap-3">
+        <div className="flex gap-4 p-1 bg-sidebar backdrop-blur-xs rounded-full border border-border shadow-lg">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -54,13 +54,17 @@ export default function AppNavigation() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={clsx(
-                  "rounded-full border px-5 py-2 text-sm font-semibold shadow backdrop-blur transition-colors",
+                  "rounded-full backdrop-blur-xs px-4 py-1 text-sm transition-colors flex flex-col items-center",
                   isActive
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                    ? "bg-sidebar-accent font-bold text-sidebar-accent-foreground"
+                    : "border-border ",
                 )}
               >
-                {item.label}
+                <item.icon
+                  className="w-5 h-5"
+                  strokeWidth={isActive ? 2.5 : 1.5}
+                />
+                <div>{item.label}</div>
               </Link>
             );
           })}
