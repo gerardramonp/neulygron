@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Home, Settings, User2 } from "lucide-react";
+import { Home, Settings } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
