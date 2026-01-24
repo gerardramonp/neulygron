@@ -15,32 +15,35 @@ export default function AppNavigation() {
 
   return (
     <>
-      <aside className="hidden md:flex text-sidebar-foreground w-64 flex-col border-r border-border bg-sidebar px-6 py-10 pb-16">
-        <div>
-          <p className="text-md uppercase tracking-widest text-muted-foreground">
-            NeuLygron
-          </p>
-          <div className="mt-4 flex flex-col gap-3">
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
+      <aside className="hidden md:flex bg-sidebar-desktop text-sidebar-desktop-foreground w-18 flex-col px-4 py-10 pb-16">
+        <div className="mt-4 flex flex-col gap-4">
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={clsx(
+                  "group text-xs transition-colors flex flex-col items-center gap-0.5",
+                  isActive ? "font-bold" : "font-medium",
+                )}
+              >
+                <div
                   className={clsx(
-                    "group rounded-2xl border px-4 py-3 text-sm font-medium transition-colors flex items-center gap-3",
+                    " rounded-lg p-2",
                     isActive
                       ? "border-border bg-sidebar-accent text-sidebar-accent-foreground shadow"
                       : "border-transparent hover:border-border",
                   )}
                 >
                   <item.icon className="w-5 h-5" />
-                  <div>{item.label}</div>
-                </Link>
-              );
-            })}
-          </div>
+                </div>
+
+                <div>{item.label}</div>
+              </Link>
+            );
+          })}
         </div>
       </aside>
 
