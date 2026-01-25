@@ -1,39 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app) and extended with JWT-based authentication powered by NextAuth, MongoDB, and Google OAuth.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the dev server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) after the server boots.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env` and set the following keys:
+
+- `DB_USER` / `DB_PASSWORD`: credentials for the `mongodb+srv://` cluster (`neulygrondb.khimgi9.mongodb.net`).
+- `AUTH_SECRET`: long random string used to sign JWTs (`openssl rand -base64 32`).
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: OAuth credentials from the Google Cloud console (Web application, redirect URI `http://localhost:3000/api/auth/callback/google`).
+
+`lib/mongodb.ts` automatically builds the connection string from the DB credentials, but you can also set `MONGODB_URI` explicitly if you prefer.
+
+## Authentication Flow
+
+- **Registration**: `POST /api/auth/register` validates payloads with Zod, hashes passwords with `bcryptjs`, and persists records in MongoDB.
+- **Email/password login**: NextAuth Credentials provider runs against the same collection and issues stateless JWT sessions.
+- **Google sign-in**: NextAuth Google provider reuses the MongoDB collection and upserts profile details so you can mix providers.
+- **Client pages**: `/register` and `/login` offer basic validation, submit to the API routes, and expose a "Continue with Google" CTA.
+- **Session availability**: `app/components/AuthSessionProvider.tsx` wraps the tree so hooks like `useSession` and `signOut` work anywhere. Navigation updates automatically once a user signs in.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [NextAuth Documentation](https://next-auth.js.org/getting-started/introduction)
+- [MongoDB Atlas](https://www.mongodb.com/atlas/database)
 
 ## Light/Dark Theme
 
