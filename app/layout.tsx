@@ -39,7 +39,9 @@ export default async function RootLayout({
         <NextIntlClientProvider>
           <div className="min-h-screen bg-background text-foreground md:flex">
             <AppNavigation />
-            <div className="flex-1 min-h-screen pb-24 md:pb-0">{children}</div>
+            <div className="flex-1 min-h-screen pb-24 md:pb-0 bg-background">
+              {children}
+            </div>
           </div>
         </NextIntlClientProvider>
       </body>

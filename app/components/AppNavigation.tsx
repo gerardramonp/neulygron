@@ -15,7 +15,7 @@ export default function AppNavigation() {
 
   return (
     <>
-      <aside className="hidden md:flex bg-sidebar-desktop text-sidebar-desktop-foreground w-18 flex-col px-4 py-10 pb-16">
+      <aside className="hidden md:flex bg-sidebar-desktop text-sidebar-desktop-foreground w-18 flex-col px-4 py-10 pb-16 md:sticky md:top-0 md:h-screen md:flex-shrink-0">
         <div className="mt-4 flex flex-col gap-4">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
