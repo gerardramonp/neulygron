@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import CategoryCard from "./CategoryCard";
+import CreateCategoryDialog from "./CreateCategoryDialog";
 import type { Category } from "./types";
 
 const CATEGORY_MOCK: Category[] = [
@@ -97,8 +97,8 @@ const CATEGORY_MOCK: Category[] = [
 export default function ConfigPage() {
   const [categories, setCategories] = useState<Category[]>(CATEGORY_MOCK);
 
-  const handleCreateCategory = () => {
-    console.log("Create category clicked");
+  const handleCategoryCreated = (category: Category) => {
+    setCategories((prev) => [...prev, category]);
   };
 
   const handleFieldChange = (
@@ -136,9 +136,7 @@ export default function ConfigPage() {
             </p>
           </section>
 
-          <Button className="w-full md:w-auto" onClick={handleCreateCategory}>
-            Create category
-          </Button>
+          <CreateCategoryDialog onCategoryCreated={handleCategoryCreated} />
         </div>
 
         <Separator className="opacity-60" />

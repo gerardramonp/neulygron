@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Check, Trash2 } from "lucide-react";
 
 import type { Category } from "./types";
@@ -73,12 +74,12 @@ export default function CategoryCard({
           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground md:hidden">
             Description
           </p>
-          <textarea
+          <Textarea
             value={category.description}
             onChange={(event) =>
               onFieldChange("description", event.target.value)
             }
-            className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="min-h-[110px] bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
 
