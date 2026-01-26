@@ -131,8 +131,8 @@ export default function ConfigPage() {
             </p>
             <h1 className="text-3xl font-bold">Category guidance</h1>
             <p className="text-muted-foreground">
-              Use these descriptions to tell the AI what belongs in each section
-              before generating the final layout.
+              Use the descriptions to tell the AI what expenses belong in each
+              section.
             </p>
           </section>
 
