@@ -47,7 +47,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { message: `Something went wrong ${error}` },
+      {
+        message: `Something went wrong ,user:${process.env.DB_USER}  pwd: ${process.env.DB_PASSWORD}  -- ${error}`,
+      },
       { status: 500 },
     );
   }
