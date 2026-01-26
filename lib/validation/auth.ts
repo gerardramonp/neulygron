@@ -10,7 +10,7 @@ export const registerSchema = z.object({
   password: z
     .string("Password is required")
     .min(8, "Password must be at least 8 characters")
-    .max(64, "Password cannot exceed 64 characters"),
+    .max(16, "Password cannot exceed 16 characters"),
 });
 
 export const loginSchema = registerSchema.pick({ email: true, password: true });
