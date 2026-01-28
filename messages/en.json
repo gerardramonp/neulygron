@@ -7,5 +7,23 @@
     "title": "Control center",
     "description": "Tune preferences, defaults, and behavior for your workspace.",
     "placeholder": "Add your configuration controls here—toggles, dropdowns, or any component you need."
+  },
+
+  "CreateCategoryDialog": {
+    "trigger": "Create category",
+    "title": "Create a new category",
+    "description": "Give the category a clear name. Add a description so the AI knows which expenses should it target.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Supermarket, Restaurants, Utilities...",
+    "descriptionLabel": "Description",
+    "descriptionOptional": "Optional",
+    "descriptionPlaceholder": "e.g. Expenses for outside activities like dining out, movies, concerts...",
+    "descriptionHelper": "You can specify expense concepts or other rules like 'Payments of Cool Bar under 10eur'",
+    "createButton": "Create category",
+    "cancelButton": "Cancel",
+    "creating": "Creating...",
+    "nameError": "Category name is required.",
+    "descriptionError": "Error",
+    "generalError": "Unable to create the category. Please try again."
   }
 }
