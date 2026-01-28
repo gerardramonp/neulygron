@@ -8,16 +8,24 @@ import {
 
 const CategorySchema = new Schema(
   {
-    name: { type: String, required: true, trim: true, unique: true },
+    name: { type: String, required: true, trim: true },
     description: {
       type: String,
       required: false,
       trim: true,
       default: "",
     },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
   },
   { timestamps: true },
 );
+
+CategorySchema.index({ userId: 1, name: 1 }, { unique: true });
 
 export type Category = InferSchemaType<typeof CategorySchema> & {
   _id: Schema.Types.ObjectId;

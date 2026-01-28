@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { StyledInput } from "@/components/ui/styled-input";
 import type { Category } from "./types";
+import { useTranslations } from "next-intl";
 
 type FormErrors = {
   name?: string;
@@ -38,6 +39,8 @@ export default function CreateCategoryDialog({
   const [formValues, setFormValues] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const t = useTranslations("CreateCategoryDialog");
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsDialogOpen(open);
@@ -72,7 +75,7 @@ export default function CreateCategoryDialog({
           });
         } else {
           setFormErrors({
-            general: data?.message ?? "Unable to create the category",
+            general: data?.message ?? t("generalError"),
           });
         }
         return;
@@ -91,7 +94,7 @@ export default function CreateCategoryDialog({
     } catch (error) {
       console.error("Failed to create category", error);
       setFormErrors({
-        general: "Unable to create the category. Please try again.",
+        general: t("generalError"),
       });
     } finally {
       setIsSubmitting(false);
@@ -101,22 +104,19 @@ export default function CreateCategoryDialog({
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
       <DialogTrigger asChild>
-        <Button className="w-full md:w-auto">Create category</Button>
+        <Button className="w-full md:w-auto">{t("trigger")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a new category</DialogTitle>
-          <DialogDescription>
-            Give the category a clear name. Add a description so the AI knows
-            when to surface it.
-          </DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <form className="space-y-4" onSubmit={handleCreateCategory}>
           <StyledInput
             id="category-name"
             name="name"
-            label="Name"
+            label={t("nameLabel")}
             value={formValues.name}
             onChange={(event) =>
               setFormValues((prev) => ({
@@ -124,7 +124,7 @@ export default function CreateCategoryDialog({
                 name: event.target.value,
               }))
             }
-            placeholder="e.g. Product pillars"
+            placeholder={t("namePlaceholder")}
             error={formErrors.name}
             required
           />
@@ -135,9 +135,11 @@ export default function CreateCategoryDialog({
                 htmlFor="category-description"
                 className="font-medium text-foreground"
               >
-                Description
+                {t("descriptionLabel")}
               </label>
-              <span className="text-muted-foreground">Optional</span>
+              <span className="text-muted-foreground">
+                {t("descriptionOptional")}
+              </span>
             </div>
             <Textarea
               id="category-description"
@@ -148,10 +150,10 @@ export default function CreateCategoryDialog({
                   description: event.target.value,
                 }))
               }
-              placeholder="Explain when this category appears and the tone you expect."
+              placeholder={t("descriptionPlaceholder")}
             />
             <p className="text-xs text-muted-foreground">
-              Leave blank or write at least 10 characters to guide the AI.
+              {t("descriptionHelper")}
             </p>
             {formErrors.description ? (
               <p className="text-sm text-destructive">
@@ -171,10 +173,10 @@ export default function CreateCategoryDialog({
               onClick={() => handleDialogOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {t("cancelButton")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create category"}
+              {isSubmitting ? t("creating") : t("createButton")}
             </Button>
           </DialogFooter>
         </form>

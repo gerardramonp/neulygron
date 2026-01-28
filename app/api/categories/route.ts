@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 
 import { connectToDatabase } from "@/lib/mongodb";
 import CategoryModel from "@/lib/models/category";
 import { createCategorySchema } from "@/lib/validation/category";
+import { authOptions } from "@/lib/auth/options";
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const parsed = createCategorySchema.safeParse(body);
 
@@ -23,6 +31,7 @@ export async function POST(request: Request) {
 
     const existingCategory = await CategoryModel.findOne({
       name: parsed.data.name,
+      userId: session.user.id,
     }).lean();
 
     if (existingCategory) {
@@ -35,6 +44,7 @@ export async function POST(request: Request) {
     const createdCategory = await CategoryModel.create({
       name: parsed.data.name,
       description: parsed.data.description ?? "",
+      userId: session.user.id,
     });
 
     return NextResponse.json(
@@ -44,6 +54,7 @@ export async function POST(request: Request) {
           id: createdCategory._id.toString(),
           name: createdCategory.name,
           description: createdCategory.description,
+          userId: createdCategory.userId.toString(),
         },
       },
       { status: 201 },
