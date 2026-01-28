@@ -6,6 +6,38 @@ import CategoryModel from "@/lib/models/category";
 import { createCategorySchema } from "@/lib/validation/category";
 import { authOptions } from "@/lib/auth/options";
 
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectToDatabase();
+
+    const categories = await CategoryModel.find({ userId: session.user.id })
+      .select("name description userId")
+      .sort({ createdAt: 1 })
+      .lean();
+
+    return NextResponse.json({
+      categories: categories.map((category) => ({
+        id: category._id.toString(),
+        name: category.name,
+        description: category.description ?? "",
+        userId: category.userId.toString(),
+      })),
+    });
+  } catch (error) {
+    console.error("Failed to fetch categories", error);
+    return NextResponse.json(
+      { message: "Something went wrong" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);

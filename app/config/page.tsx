@@ -1,104 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Separator } from "@/components/ui/separator";
 import CategoryCard from "./CategoryCard";
 import CreateCategoryDialog from "./CreateCategoryDialog";
 import type { Category } from "./types";
 
-const CATEGORY_MOCK: Category[] = [
-  {
-    id: "hero",
-    name: "Hero spotlight",
-    description:
-      "Open with a confident hero statement that explains the mission and what users should feel at first glance.",
-  },
-  {
-    id: "pillars",
-    name: "Product pillars",
-    description:
-      "Summarize three concise feature pillars. Focus on outcomes and why they matter for day-to-day workflows.",
-  },
-  {
-    id: "assist",
-    name: "AI assist",
-    description:
-      "Describe how the AI partner collaborates with teams. Highlight tone, guardrails, and onboarding steps.",
-  },
-  {
-    id: "proof",
-    name: "Proof & trust",
-    description:
-      "List credibility builders like testimonials, metrics, or certifications that calm any adoption doubts.",
-  },
-  {
-    id: "onboarding",
-    name: "Onboarding flow",
-    description:
-      "Spell out the first three steps new users take so AI can highlight a confident start-to-finish journey.",
-  },
-  {
-    id: "personalization",
-    name: "Personalization cues",
-    description:
-      "Describe how the product adapts to roles, preferences, or data inputs so messaging feels bespoke.",
-  },
-  {
-    id: "pricing",
-    name: "Pricing clarity",
-    description:
-      "Explain the pricing narrative, including tiers, value props, and any guarantees that reduce friction.",
-  },
-  {
-    id: "compliance",
-    name: "Compliance & safety",
-    description:
-      "Outline regulatory or security promises the AI must surface to reassure sensitive industries.",
-  },
-  {
-    id: "integrations",
-    name: "Integrations",
-    description:
-      "List the top ecosystem connections and why they unlock compounding value inside existing workflows.",
-  },
-  {
-    id: "support",
-    name: "Support paths",
-    description:
-      "Clarify how humans and AI collaborate post-launch: channels, SLAs, and escalation best practices.",
-  },
-  {
-    id: "community",
-    name: "Community signals",
-    description:
-      "Share meetups, forums, or ambassador programs that prove there is momentum behind the product.",
-  },
-  {
-    id: "roadmap",
-    name: "Roadmap teaser",
-    description:
-      "Provide a glimpse into upcoming releases so AI can frame urgency and forward-looking trust.",
-  },
-  {
-    id: "faq",
-    name: "FAQ quick hits",
-    description:
-      "List the top objections or questions prospects ask and the concise answers we want rendered.",
-  },
-  {
-    id: "cta",
-    name: "Closing CTA",
-    description:
-      "Detail the final action we want users to take and the tone (confident, warm, urgent) to apply.",
-  },
-];
-
 export default function ConfigPage() {
-  const [categories, setCategories] = useState<Category[]>(CATEGORY_MOCK);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadCategories = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const payload = (await response.json().catch(() => null)) as {
+          categories?: Category[];
+          message?: string;
+        } | null;
+
+        if (!response.ok) {
+          if (isActive) {
+            setFetchError(payload?.message ?? "Unable to load categories.");
+          }
+          return;
+        }
+
+        if (isActive) {
+          setFetchError(null);
+          setCategories(
+            Array.isArray(payload?.categories) ? payload.categories : [],
+          );
+        }
+      } catch (error) {
+        if (isActive) {
+          setFetchError("Unable to load categories. Please try again.");
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const handleCategoryCreated = (category: Category) => {
     setCategories((prev) => [...prev, category]);
+    setFetchError(null);
   };
 
   const handleFieldChange = (
@@ -114,11 +72,8 @@ export default function ConfigPage() {
   };
 
   const handleDelete = (id: string) => {
-    console.info("Deleted category", id);
-  };
-
-  const handleSave = (category: Category) => {
-    console.info("Saved category", category);
+    setCategories((prev) => prev.filter((category) => category.id !== id));
+    setFetchError(null);
   };
 
   return (
@@ -141,18 +96,34 @@ export default function ConfigPage() {
 
         <Separator className="opacity-60" />
 
+        {fetchError ? (
+          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {fetchError}
+          </p>
+        ) : null}
+
         <div className="grid gap-4 md:gap-6">
-          {categories.map((category) => (
-            <CategoryCard
-              key={category.id}
-              category={category}
-              onFieldChange={(field, value) =>
-                handleFieldChange(category.id, field, value)
-              }
-              onDelete={() => handleDelete(category.id)}
-              onSave={() => handleSave(category)}
-            />
-          ))}
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">
+              Loading categories...
+            </p>
+          ) : categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No categories yet. Create the first one to get started.
+            </p>
+          ) : (
+            categories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                category={category}
+                onFieldChange={(field, value) =>
+                  handleFieldChange(category.id, field, value)
+                }
+                onDelete={() => handleDelete(category.id)}
+                onError={setFetchError}
+              />
+            ))
+          )}
         </div>
       </div>
     </main>
