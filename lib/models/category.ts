@@ -4,6 +4,7 @@ import {
   type InferSchemaType,
   models,
   model,
+  Types,
 } from "mongoose";
 
 const CategorySchema = new Schema(
@@ -28,7 +29,7 @@ const CategorySchema = new Schema(
 CategorySchema.index({ userId: 1, name: 1 }, { unique: true });
 
 export type Category = InferSchemaType<typeof CategorySchema> & {
-  _id: Schema.Types.ObjectId;
+  _id: Types.ObjectId;
 };
 
 const CategoryModel: Model<Category> =

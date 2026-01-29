@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Loader2, Trash2 } from "lucide-react";
 
 import type { Category } from "./types";
 
@@ -13,16 +13,19 @@ type CategoryCardProps = {
   category: Category;
   onFieldChange: (field: "name" | "description", value: string) => void;
   onDelete: () => void;
-  onSave: () => void;
+  onError: (message: string | null) => void;
 };
 
 export default function CategoryCard({
   category,
   onFieldChange,
   onDelete,
-  onSave,
+  onError,
 }: CategoryCardProps) {
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isBusy = isSaving || isDeleting;
 
   const handleNameClick = () => {
     setIsEditingName(true);
@@ -33,13 +36,104 @@ export default function CategoryCard({
   };
 
   const handleDeleteClick = () => {
+    if (isBusy) {
+      return;
+    }
+
     setIsEditingName(false);
-    onDelete();
+    void deleteCategory();
   };
 
   const handleSaveClick = () => {
+    if (isBusy) {
+      return;
+    }
+
     setIsEditingName(false);
-    onSave();
+    void saveCategory();
+  };
+
+  const saveCategory = async () => {
+    if (!category.id) {
+      onError?.("Missing category identifier.");
+      return;
+    }
+
+    setIsSaving(true);
+    onError(null);
+
+    try {
+      const response = await fetch(`/api/categories/${category.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: category.name,
+          description: category.description,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        category?: Category;
+        message?: string;
+      } | null;
+
+      if (!response.ok) {
+        const message = payload?.message ?? "Unable to update category.";
+        console.error(message);
+        onError?.(message);
+        return;
+      }
+
+      if (payload?.category) {
+        if (typeof payload.category.name === "string") {
+          onFieldChange("name", payload.category.name);
+        }
+        if (typeof payload.category.description === "string") {
+          onFieldChange("description", payload.category.description);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update category", error);
+      onError?.("Unable to update category. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteCategory = async () => {
+    if (!category.id) {
+      onError?.("Missing category identifier.");
+      return;
+    }
+
+    setIsDeleting(true);
+    onError(null);
+
+    try {
+      const response = await fetch(`/api/categories/${category.id}`, {
+        method: "DELETE",
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+
+      if (!response.ok) {
+        const message = payload?.message ?? "Unable to delete category.";
+        console.error(message);
+        onError?.(message);
+        return;
+      }
+
+      onDelete();
+    } catch (error) {
+      console.error("Failed to delete category", error);
+      onError?.("Unable to delete category. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -89,12 +183,26 @@ export default function CategoryCard({
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={handleDeleteClick}
+            disabled={isBusy}
           >
-            <Trash2 className="h-4 w-4" aria-hidden />
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Trash2 className="h-4 w-4" aria-hidden />
+            )}
             <span className="sr-only">Delete {category.name}</span>
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleSaveClick}>
-            <Check className="h-4 w-4" aria-hidden />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSaveClick}
+            disabled={isBusy}
+          >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-4 w-4" aria-hidden />
+            )}
             <span className="sr-only">Save {category.name}</span>
           </Button>
         </div>
