@@ -1,6 +1,17 @@
 {
   "HomePage": {
-    "title": "Hola mundo!"
+    "label": "Carga de gastos",
+    "title": "Clasifica tus gastos",
+    "description": "Sube el PDF exportado de tu banco para que podamos asignar cada movimiento a una categoría.",
+    "uploadLabel": "Sube el PDF de gastos",
+    "uploadHint": "Arrastra un PDF aquí o haz clic para elegirlo desde tu computadora.",
+    "uploadHelper": "Por ahora solo se admiten archivos PDF de hasta 10 MB.",
+    "uploadCta": "Elegir PDF",
+    "selectedFileLabel": "Archivo seleccionado",
+    "classifyButton": "Clasificar gastos",
+    "errors": {
+      "invalidType": "Sube un archivo en formato PDF."
+    }
   },
   "ConfigPage": {
     "label": "Configuración de contenido",

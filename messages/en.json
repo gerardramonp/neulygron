@@ -1,6 +1,17 @@
 {
   "HomePage": {
-    "title": "Hello world!"
+    "label": "Expense classifier",
+    "title": "Classify your expenses",
+    "description": "Upload the PDF exported from your bank so the AI model can map each transaction to a category.",
+    "uploadLabel": "Upload expenses PDF",
+    "uploadHint": "Drag a PDF here or click to pick it from your computer.",
+    "uploadHelper": "Only PDF files up to 10MB are supported right now.",
+    "uploadCta": "Choose PDF",
+    "selectedFileLabel": "Selected file",
+    "classifyButton": "Classify expenses",
+    "errors": {
+      "invalidType": "Please upload a PDF file."
+    }
   },
   "ConfigPage": {
     "label": "AI Model config",
