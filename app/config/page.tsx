@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Separator } from "@/components/ui/separator";
 import CategoryCard from "./CategoryCard";
@@ -11,6 +12,7 @@ export default function ConfigPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const t = useTranslations("ConfigPage");
 
   useEffect(() => {
     let isActive = true;
@@ -25,7 +27,7 @@ export default function ConfigPage() {
 
         if (!response.ok) {
           if (isActive) {
-            setFetchError(payload?.message ?? "Unable to load categories.");
+            setFetchError(payload?.message ?? t("errors.unableToLoad"));
           }
           return;
         }
@@ -38,7 +40,7 @@ export default function ConfigPage() {
         }
       } catch (error) {
         if (isActive) {
-          setFetchError("Unable to load categories. Please try again.");
+          setFetchError(t("errors.retry"));
         }
       } finally {
         if (isActive) {
@@ -82,13 +84,10 @@ export default function ConfigPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <section className="space-y-3">
             <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-              Content config
+              {t("label")}
             </p>
-            <h1 className="text-3xl font-bold">Category guidance</h1>
-            <p className="text-muted-foreground">
-              Use the descriptions to tell the AI what expenses belong in each
-              section.
-            </p>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">{t("description")}</p>
           </section>
 
           <CreateCategoryDialog onCategoryCreated={handleCategoryCreated} />
@@ -104,13 +103,9 @@ export default function ConfigPage() {
 
         <div className="grid gap-4 md:gap-6">
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">
-              Loading categories...
-            </p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           ) : categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No categories yet. Create the first one to get started.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
           ) : (
             categories.map((category) => (
               <CategoryCard

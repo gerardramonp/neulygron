@@ -3,10 +3,16 @@
     "title": "Hello world!"
   },
   "ConfigPage": {
-    "label": "Configuration",
-    "title": "Control center",
-    "description": "Tune preferences, defaults, and behavior for your workspace.",
-    "placeholder": "Add your configuration controls here—toggles, dropdowns, or any component you need."
+    "label": "AI Model config",
+    "title": "Your categories",
+    "description": "Create categories so the AI knows how to classify your expenses. Use the descriptions to explain what expenses belong to the category.",
+    "placeholder": "Add your configuration controls here—toggles, dropdowns, or any component you need.",
+    "loading": "Loading categories...",
+    "emptyState": "No categories yet. Create the first one to get started.",
+    "errors": {
+      "unableToLoad": "Unable to load categories.",
+      "retry": "Unable to load categories. Please try again."
+    }
   },
 
   "CreateCategoryDialog": {

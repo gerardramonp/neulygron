@@ -3,9 +3,15 @@
     "title": "Hola mundo!"
   },
   "ConfigPage": {
-    "label": "Configuración",
-    "title": "Centro de control",
-    "description": "Ajusta preferencias, valores predeterminados y el comportamiento de tu espacio de trabajo.",
-    "placeholder": "Agrega aquí tus controles de configuración: interruptores, selectores o cualquier componente que necesites."
+    "label": "Configuración de contenido",
+    "title": "Guía de categorías",
+    "description": "Usa las descripciones para indicarle a la IA qué gastos pertenecen a cada sección.",
+    "placeholder": "Agrega aquí tus controles de configuración: interruptores, selectores o cualquier componente que necesites.",
+    "loading": "Cargando categorías...",
+    "emptyState": "Todavía no hay categorías. Crea la primera para comenzar.",
+    "errors": {
+      "unableToLoad": "No se pueden cargar las categorías.",
+      "retry": "No se pueden cargar las categorías. Intenta de nuevo."
+    }
   }
 }
