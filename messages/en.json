@@ -9,8 +9,10 @@
     "uploadCta": "Choose PDF",
     "selectedFileLabel": "Selected file",
     "classifyButton": "Classify expenses",
+    "classifyingButton": "Classifying...",
     "errors": {
-      "invalidType": "Please upload a PDF file."
+      "invalidType": "Please upload a PDF file.",
+      "uploadFailed": "We couldn't classify your file. Please try again."
     }
   },
   "ConfigPage": {

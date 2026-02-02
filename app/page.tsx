@@ -10,9 +10,23 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [classificationResult, setClassificationResult] = useState<
+    string | null
+  >(null);
+  const [classificationError, setClassificationError] = useState<string | null>(
+    null,
+  );
+  const [isClassifying, setIsClassifying] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const resetClassificationFeedback = () => {
+    setClassificationResult(null);
+    setClassificationError(null);
+  };
+
   const processFile = (file: File | null) => {
+    resetClassificationFeedback();
+
     if (!file) {
       setSelectedFile(null);
       setFileError(null);
@@ -65,6 +79,39 @@ export default function Home() {
     setIsDragging(false);
     const file = event.dataTransfer.files?.[0] ?? null;
     processFile(file);
+  };
+
+  const handleClassifyExpenses = async () => {
+    if (!selectedFile) {
+      return;
+    }
+
+    setIsClassifying(true);
+    setClassificationResult(null);
+    setClassificationError(null);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const response = await fetch("/api/expenses/classify", {
+        method: "POST",
+        body: formData,
+      });
+
+      const message = await response.text();
+
+      if (!response.ok) {
+        setClassificationError(message || t("errors.uploadFailed"));
+        return;
+      }
+
+      setClassificationResult(message || "Classification endpoint works");
+    } catch {
+      setClassificationError(t("errors.uploadFailed"));
+    } finally {
+      setIsClassifying(false);
+    }
   };
 
   return (
@@ -127,9 +174,28 @@ export default function Home() {
         </section>
 
         {selectedFile ? (
-          <Button className="w-full self-start md:w-auto">
-            {t("classifyButton")}
-          </Button>
+          <div className="w-full self-start space-y-3 md:w-auto">
+            <Button
+              className="w-full md:w-auto"
+              onClick={handleClassifyExpenses}
+              disabled={isClassifying}
+              aria-busy={isClassifying}
+            >
+              {isClassifying ? t("classifyingButton") : t("classifyButton")}
+            </Button>
+
+            {classificationError ? (
+              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {classificationError}
+              </p>
+            ) : null}
+
+            {classificationResult ? (
+              <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+                {classificationResult}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </main>
