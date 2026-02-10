@@ -70,26 +70,41 @@ export async function classifyExpenses(
 
 TASK: Distribute the ${expenses.length} expenses below across the appropriate categories.
 
+IMPORTANT:
+Every expense MUST appear in the output exactly once. Missing or duplicated expenses are not allowed.
+
 ${
   hasPredefinedCategories
-    ? `CATEGORIES TO USE (you MUST use these exact names):
+    ? `CATEGORIES TO USE (use these names EXACTLY, case sensitive):
+${categoryNames.map((n) => `- ${n}`).join("\n")}
+
+CATEGORY DEFINITIONS:
 ${categoryListText}
 
-Category names available: [${categoryNames.map((n) => `"${n}"`).join(", ")}]`
+If an expense does not clearly fit any category, ALWAYS put it in "Otros". Never omit it.
+`
     : `No predefined categories provided. Create logical category names like "Groceries", "Transportation", "Entertainment", "Utilities", "Dining", etc.`
 }
 
 RULES:
-1. EVERY expense must appear in your output exactly once (total: ${expenses.length})
-2. Distribute expenses across MULTIPLE categories - do not put everything in one category
-3. Match each expense to the most appropriate category based on the merchant/concept
-4. If no category fits, put the expense in "uncategorized"
-5. Copy concept and amount exactly as shown
+1. Every expense must appear exactly once
+2. Total expenses in output must be exactly ${expenses.length}
+3. Copy concept and amount exactly as provided
+4. Do not invent or rename categories
+5. Do not drop expenses under any circumstance
+
+FINAL CHECK (MANDATORY):
+Before responding:
+
+Count the total number of expenses across all categories
+
+If the total is not ${expenses.length}, fix the output before returning it
 
 EXPENSES TO CATEGORIZE:
 ${JSON.stringify(expenses, null, 2)}
 
-Remember: Output exactly ${expenses.length} expenses across multiple categories.`;
+Remember: Output exactly ${expenses.length} expenses across the different categories.
+`;
 
   console.log("cclog prompt", prompt);
 

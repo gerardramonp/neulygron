@@ -40,8 +40,6 @@ export async function POST(request: Request) {
       description: c.description,
     }));
 
-    console.log(">>> cclog categoriesData:", categoriesData);
-
     const { text } = await parsePdf(validation.file);
 
     if (!text) {
