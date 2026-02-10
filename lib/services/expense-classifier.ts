@@ -66,9 +66,10 @@ export async function classifyExpenses(
         .join("\n")
     : "";
 
-  const prompt = `You are an expert at categorizing expenses into multiple categories.
+  const prompt = `You are an expert at categorizing expenses.
 
 TASK: Distribute the ${expenses.length} expenses below across the appropriate categories.
+Some expenses may not fit any category. Those MUST be returned under "uncategorized".
 
 IMPORTANT:
 Every expense MUST appear in the output exactly once. Missing or duplicated expenses are not allowed.
@@ -79,37 +80,37 @@ ${
 ${categoryNames.map((n) => `- ${n}`).join("\n")}
 
 CATEGORY DEFINITIONS:
-${categoryListText}
-
-If an expense does not clearly fit any category, ALWAYS put it in "Otros". Never omit it.
-`
+${categoryListText}`
     : `No predefined categories provided. Create logical category names like "Groceries", "Transportation", "Entertainment", "Utilities", "Dining", etc.`
 }
 
-RULES:
-1. Every expense must appear exactly once
-2. Total expenses in output must be exactly ${expenses.length}
-3. Copy concept and amount exactly as provided
-4. Do not invent or rename categories
-5. Do not drop expenses under any circumstance
+RULES (CRITICAL):
+1. Every expense MUST appear exactly once in the output
+2. Each expense must be placed EITHER:
+    - inside exactly one category
+    - OR in the "uncategorized" section if it doesn't fit any category
+3. "uncategorized" is NOT a category, but it DOES count toward the total
+4. Total expenses across all categories PLUS uncategorized must equal exactly ${expenses.length}
+5. Never drop or duplicate expenses
+6. Copy concept and amount exactly as provided
 
-FINAL CHECK (MANDATORY):
+FINAL VERIFICATION (MANDATORY):
 Before responding:
 
-Count the total number of expenses across all categories
+Count expenses in all categories
 
-If the total is not ${expenses.length}, fix the output before returning it
+Count expenses in uncategorized
+
+If total is not ${expenses.length}, fix the output before returning
 
 EXPENSES TO CATEGORIZE:
 ${JSON.stringify(expenses, null, 2)}
-
-Remember: Output exactly ${expenses.length} expenses across the different categories.
 `;
 
   console.log("cclog prompt", prompt);
 
   const { output } = await generateText({
-    model: "openai/gpt-4o-mini",
+    model: "openai/gpt-5-nano",
     temperature: 0,
     output: Output.object({ schema: classifyExpensesSchema }),
     prompt,
