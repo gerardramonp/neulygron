@@ -4,15 +4,15 @@ import { useState, type ChangeEvent, type DragEvent, useRef } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import { ClassifiedExpenses } from "@/lib/validation/expenses";
 
 export default function Home() {
   const t = useTranslations("HomePage");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [classificationResult, setClassificationResult] = useState<
-    string | null
-  >(null);
+  const [classificationResult, setClassificationResult] =
+    useState<ClassifiedExpenses | null>(null);
   const [classificationError, setClassificationError] = useState<string | null>(
     null,
   );
@@ -99,7 +99,7 @@ export default function Home() {
         body: formData,
       });
 
-      const message = await response.text();
+      const message = await response.json();
 
       if (!response.ok) {
         setClassificationError(message || t("errors.uploadFailed"));
@@ -191,9 +191,31 @@ export default function Home() {
             ) : null}
 
             {classificationResult ? (
-              <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
-                {classificationResult}
-              </p>
+              <>
+                <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+                  Classified
+                  {classificationResult.categories.map((category) => (
+                    <div key={category.name}>
+                      <strong>{category.name}</strong>
+                      <ul>
+                        {category.expenses.map((expense, index) => (
+                          <li key={index}>
+                            {expense.concept}: ${expense.amount}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </p>
+                <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+                  Unclassified
+                  {classificationResult.uncategorized.map((expense, index) => (
+                    <div key={index}>
+                      {expense.concept}: {expense.amount} eur
+                    </div>
+                  ))}
+                </p>
+              </>
             ) : null}
           </div>
         ) : null}
