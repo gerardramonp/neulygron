@@ -107,8 +107,6 @@ EXPENSES TO CATEGORIZE:
 ${JSON.stringify(expenses, null, 2)}
 `;
 
-  console.log("cclog prompt", prompt);
-
   const { output } = await generateText({
     model: "openai/gpt-5-nano",
     temperature: 0,

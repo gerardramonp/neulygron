@@ -1,10 +1,21 @@
 "use client";
 
-import { useState, type ChangeEvent, type DragEvent, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  type ChangeEvent,
+  type DragEvent,
+  useRef,
+} from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
+import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import { ClassifiedExpenses } from "@/lib/validation/expenses";
+import type { Category } from "@/app/config/types";
+import caterogiseMock from "@/mocks/caterogiseMock.json";
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -17,7 +28,60 @@ export default function Home() {
     null,
   );
   const [isClassifying, setIsClassifying] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) {
+          setCategories(data.categories);
+        }
+      })
+      .catch(() => {
+        // Silently ignore — categories will just be empty
+      });
+  }, []);
+
+  const handleAssignExpense = useCallback(
+    (expenseIndex: number, categoryName: string) => {
+      setClassificationResult((prev) => {
+        if (!prev) return prev;
+
+        const expense = prev.uncategorized[expenseIndex];
+        if (!expense) return prev;
+
+        const nextUncategorized = prev.uncategorized.filter(
+          (_, i) => i !== expenseIndex,
+        );
+
+        const existingCategoryIndex = prev.categories.findIndex(
+          (cat) => cat.name === categoryName,
+        );
+
+        let nextCategories;
+        if (existingCategoryIndex >= 0) {
+          nextCategories = prev.categories.map((cat, i) =>
+            i === existingCategoryIndex
+              ? { ...cat, expenses: [...cat.expenses, expense] }
+              : cat,
+          );
+        } else {
+          nextCategories = [
+            ...prev.categories,
+            { name: categoryName, expenses: [expense] },
+          ];
+        }
+
+        return {
+          categories: nextCategories,
+          uncategorized: nextUncategorized,
+        };
+      });
+    },
+    [],
+  );
 
   const resetClassificationFeedback = () => {
     setClassificationResult(null);
@@ -94,19 +158,20 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch("/api/expenses/classify", {
-        method: "POST",
-        body: formData,
-      });
+      // const response = await fetch("/api/expenses/classify", {
+      //   method: "POST",
+      //   body: formData,
+      // });
 
-      const message = await response.json();
+      // const message = await response.json();
 
-      if (!response.ok) {
-        setClassificationError(message || t("errors.uploadFailed"));
-        return;
-      }
+      // if (!response.ok) {
+      //   setClassificationError(message || t("errors.uploadFailed"));
+      //   return;
+      // }
 
-      setClassificationResult(message || "Classification endpoint works");
+      // setClassificationResult(message);
+      setClassificationResult(caterogiseMock);
     } catch {
       setClassificationError(t("errors.uploadFailed"));
     } finally {
@@ -116,7 +181,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="space-y-3">
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             {t("label")}
@@ -174,7 +239,7 @@ export default function Home() {
         </section>
 
         {selectedFile ? (
-          <div className="w-full self-start space-y-3 md:w-auto">
+          <div className="w-full self-start space-y-10">
             <Button
               className="w-full md:w-auto"
               onClick={handleClassifyExpenses}
@@ -184,6 +249,8 @@ export default function Home() {
               {isClassifying ? t("classifyingButton") : t("classifyButton")}
             </Button>
 
+            {isClassifying ? <ClassificationProgress /> : null}
+
             {classificationError ? (
               <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {classificationError}
@@ -191,31 +258,11 @@ export default function Home() {
             ) : null}
 
             {classificationResult ? (
-              <>
-                <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
-                  Classified
-                  {classificationResult.categories.map((category) => (
-                    <div key={category.name}>
-                      <strong>{category.name}</strong>
-                      <ul>
-                        {category.expenses.map((expense, index) => (
-                          <li key={index}>
-                            {expense.concept}: ${expense.amount}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </p>
-                <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
-                  Unclassified
-                  {classificationResult.uncategorized.map((expense, index) => (
-                    <div key={index}>
-                      {expense.concept}: {expense.amount} eur
-                    </div>
-                  ))}
-                </p>
-              </>
+              <ClassificationResults
+                data={classificationResult}
+                categories={categories}
+                onAssign={handleAssignExpense}
+              />
             ) : null}
           </div>
         ) : null}
