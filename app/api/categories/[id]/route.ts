@@ -6,6 +6,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import CategoryModel, { type Category } from "@/lib/models/category";
 import { updateCategorySchema } from "@/lib/validation/category";
 import { authOptions } from "@/lib/auth/options";
+import { logger } from "@/lib/logger";
 
 const buildCategoryFilter = (
   categoryId: string,
@@ -84,7 +85,11 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    console.error("Failed to update category", error);
+    logger.error("Failed to update category", error, {
+      route: "/api/categories/[id]",
+      method: "PATCH",
+      userId: session?.user?.id,
+    });
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 },
@@ -126,7 +131,11 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Category deleted" });
   } catch (error) {
-    console.error("Failed to delete category", error);
+    logger.error("Failed to delete category", error, {
+      route: "/api/categories/[id]",
+      method: "DELETE",
+      userId: session?.user?.id,
+    });
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 },
