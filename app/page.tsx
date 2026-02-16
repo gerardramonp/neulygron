@@ -15,7 +15,6 @@ import { ClassificationProgress } from "@/components/expenses/ClassificationProg
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import { ClassifiedExpenses } from "@/lib/validation/expenses";
 import type { Category } from "@/app/config/types";
-import caterogiseMock from "@/mocks/caterogiseMock.json";
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -158,20 +157,19 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      // const response = await fetch("/api/expenses/classify", {
-      //   method: "POST",
-      //   body: formData,
-      // });
+      const response = await fetch("/api/expenses/classify", {
+        method: "POST",
+        body: formData,
+      });
 
-      // const message = await response.json();
+      const message = await response.json();
 
-      // if (!response.ok) {
-      //   setClassificationError(message || t("errors.uploadFailed"));
-      //   return;
-      // }
+      if (!response.ok) {
+        setClassificationError(message || t("errors.uploadFailed"));
+        return;
+      }
 
-      // setClassificationResult(message);
-      setClassificationResult(caterogiseMock);
+      setClassificationResult(message);
     } catch {
       setClassificationError(t("errors.uploadFailed"));
     } finally {
