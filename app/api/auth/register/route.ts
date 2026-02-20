@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/mongodb";
 import UserModel from "@/lib/models/user";
 import { registerSchema } from "@/lib/validation/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -51,11 +52,12 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error(error);
+    logger.error("Failed to register user", error, {
+      route: "/api/auth/register",
+      method: "POST",
+    });
     return NextResponse.json(
-      {
-        message: `Something went wrong -- ${error}`,
-      },
+      { message: "Something went wrong" },
       { status: 500 },
     );
   }

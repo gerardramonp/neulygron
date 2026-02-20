@@ -5,6 +5,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import CategoryModel from "@/lib/models/category";
 import { createCategorySchema } from "@/lib/validation/category";
 import { authOptions } from "@/lib/auth/options";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -30,7 +31,11 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error("Failed to fetch categories", error);
+    logger.error("Failed to fetch categories", error, {
+      route: "/api/categories",
+      method: "GET",
+      userId: session?.user?.id,
+    });
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 },
@@ -92,7 +97,11 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("Failed to create category", error);
+    logger.error("Failed to create category", error, {
+      route: "/api/categories",
+      method: "POST",
+      userId: session?.user?.id,
+    });
     return NextResponse.json(
       { message: `Something went wrong ${error}` },
       { status: 500 },
