@@ -10,6 +10,8 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 
+import categoriesMock from "@/mocks/caterogiseMock.json";
+
 import { Button } from "@/components/ui/button";
 import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
@@ -157,19 +159,20 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch("/api/expenses/classify", {
-        method: "POST",
-        body: formData,
-      });
+      // const response = await fetch("/api/expenses/classify", {
+      //   method: "POST",
+      //   body: formData,
+      // });
 
-      const message = await response.json();
+      // const message = await response.json();
 
-      if (!response.ok) {
-        setClassificationError(message || t("errors.uploadFailed"));
-        return;
-      }
+      // if (!response.ok) {
+      //   setClassificationError(message || t("errors.uploadFailed"));
+      //   return;
+      // }
 
-      setClassificationResult(message);
+      // setClassificationResult(message);
+      setClassificationResult(categoriesMock);
     } catch {
       setClassificationError(t("errors.uploadFailed"));
     } finally {
