@@ -172,7 +172,13 @@ export default function Home() {
       // }
 
       // setClassificationResult(message);
-      setClassificationResult(categoriesMock);
+      const sortedResult = {
+        ...categoriesMock,
+        categories: [...categoriesMock.categories].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      };
+      setClassificationResult(sortedResult);
     } catch {
       setClassificationError(t("errors.uploadFailed"));
     } finally {
