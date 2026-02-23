@@ -8,8 +8,9 @@ import { authOptions } from "@/lib/auth/options";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -44,8 +45,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -103,7 +105,7 @@ export async function POST(request: Request) {
       userId: session?.user?.id,
     });
     return NextResponse.json(
-      { message: "Something went wrong" },
+      { message: `Something went wrong ${error}` },
       { status: 500 },
     );
   }

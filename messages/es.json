@@ -9,8 +9,10 @@
     "uploadCta": "Elegir PDF",
     "selectedFileLabel": "Archivo seleccionado",
     "classifyButton": "Clasificar gastos",
+    "classifyingButton": "Clasificando...",
     "errors": {
-      "invalidType": "Sube un archivo en formato PDF."
+      "invalidType": "Sube un archivo en formato PDF.",
+      "uploadFailed": "No pudimos clasificar tu archivo. Intenta nuevamente."
     }
   },
   "ConfigPage": {

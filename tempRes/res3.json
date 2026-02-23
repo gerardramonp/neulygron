@@ -1,0 +1,155 @@
+{
+  "categories": [
+    {
+      "name": "Compra",
+      "expenses": [
+        {
+          "concept": "Esclat",
+          "amount": 1.38
+        },
+        {
+          "concept": "Esclat",
+          "amount": 0.81
+        },
+        {
+          "concept": "Mercadona",
+          "amount": 29.8
+        },
+        {
+          "concept": "Mercadona",
+          "amount": 74.13
+        },
+        {
+          "concept": "Mercadona",
+          "amount": 1.8
+        },
+        {
+          "concept": "Mercadona",
+          "amount": 64.9
+        },
+        {
+          "concept": "Lidl",
+          "amount": 16.93
+        },
+        {
+          "concept": "Jures 2002 Xavisan",
+          "amount": 13.5
+        },
+        {
+          "concept": "Jures 2002 Xavisan",
+          "amount": 17.3
+        },
+        {
+          "concept": "Jures 2002 Xavisan",
+          "amount": 15.2
+        },
+        {
+          "concept": "Jures 2002 Xavisan",
+          "amount": 21.88
+        },
+        {
+          "concept": "Coromines",
+          "amount": 6.2
+        },
+        {
+          "concept": "Coromines",
+          "amount": 5
+        },
+        {
+          "concept": "Bar Industria",
+          "amount": 3.2
+        },
+        {
+          "concept": "Xurreria Capricho",
+          "amount": 2.5
+        },
+        {
+          "concept": "Supermolina Sports",
+          "amount": 59.5
+        },
+        {
+          "concept": "Celler Del Ferrer",
+          "amount": 11.9
+        },
+        {
+          "concept": "Gallo Descorchado",
+          "amount": 5.75
+        },
+        {
+          "concept": "Gallo Descorchado",
+          "amount": 7.6
+        },
+        {
+          "concept": "Coaliment",
+          "amount": 1.79
+        },
+        {
+          "concept": "Flowers Bakery",
+          "amount": 4
+        },
+        {
+          "concept": "Santa Gloria",
+          "amount": 9.8
+        },
+        {
+          "concept": "La Gralla",
+          "amount": 5.5
+        },
+        {
+          "concept": "Telpark",
+          "amount": 13.94
+        },
+        {
+          "concept": "Electrolinera 9083 Canove",
+          "amount": 3.75
+        },
+        {
+          "concept": "Gralla",
+          "amount": 0.01
+        }
+      ]
+    }
+  ],
+  "uncategorized": [
+    {
+      "concept": "Kinepolis",
+      "amount": 24.1
+    },
+    {
+      "concept": "Uber Eats",
+      "amount": 30.37
+    },
+    {
+      "concept": "Uber Eats",
+      "amount": 35.59
+    },
+    {
+      "concept": "Maes La Molina",
+      "amount": 78
+    },
+    {
+      "concept": "Parking Imperial",
+      "amount": 0.207
+    },
+    {
+      "concept": "Apk Gestion",
+      "amount": 0.01
+    },
+    {
+      "concept": "Pepper Asset Servicing",
+      "amount": 85.12
+    },
+    {
+      "concept": "Repsol",
+      "amount": 0.01
+    },
+    {
+      "concept": "Ayuntamiento de Madrid parking",
+      "amount": 5
+    },
+    {
+      "concept": "Apk Gestion",
+      "amount": 0.01
+    }
+  ]
+}

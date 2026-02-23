@@ -4,25 +4,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
 import { connectToDatabase } from "@/lib/mongodb";
+import { env } from "@/lib/env";
 import UserModel from "@/lib/models/user";
 import { loginSchema } from "@/lib/validation/auth";
 
-const authSecret = process.env.AUTH_SECRET;
-const googleClientId = process.env.AUTH_GOOGLE_ID;
-const googleClientSecret = process.env.AUTH_GOOGLE_SECRET;
-
-if (!authSecret) {
-  throw new Error("AUTH_SECRET must be set for authentication");
-}
-
-if (!googleClientId || !googleClientSecret) {
-  throw new Error(
-    "Google OAuth credentials are missing. Set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET.",
-  );
-}
-
 export const authOptions: NextAuthOptions = {
-  secret: authSecret,
+  secret: env.AUTH_SECRET,
   session: {
     strategy: "jwt",
   },
@@ -31,8 +18,8 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     GoogleProvider({
-      clientId: googleClientId,
-      clientSecret: googleClientSecret,
+      clientId: env.AUTH_GOOGLE_ID,
+      clientSecret: env.AUTH_GOOGLE_SECRET,
     }),
     CredentialsProvider({
       name: "Credentials",
