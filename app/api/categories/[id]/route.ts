@@ -20,9 +20,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let session;
   try {
     const { id: categoryId } = await params;
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -101,9 +102,10 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let session;
   try {
     const { id: categoryId } = await params;
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
