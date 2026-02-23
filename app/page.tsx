@@ -1,18 +1,97 @@
 "use client";
 
-import { useState, type ChangeEvent, type DragEvent, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  type ChangeEvent,
+  type DragEvent,
+  useRef,
+} from "react";
 import { useTranslations } from "next-intl";
 
+import categoriesMock from "@/mocks/caterogiseMock.json";
+
 import { Button } from "@/components/ui/button";
+import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
+import { ClassificationResults } from "@/components/expenses/ClassificationResults";
+import { ClassifiedExpenses } from "@/lib/validation/expenses";
+import type { Category } from "@/app/config/types";
 
 export default function Home() {
   const t = useTranslations("HomePage");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [classificationResult, setClassificationResult] =
+    useState<ClassifiedExpenses | null>(null);
+  const [classificationError, setClassificationError] = useState<string | null>(
+    null,
+  );
+  const [isClassifying, setIsClassifying] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) {
+          setCategories(data.categories);
+        }
+      })
+      .catch(() => {
+        // Silently ignore — categories will just be empty
+      });
+  }, []);
+
+  const handleAssignExpense = useCallback(
+    (expenseIndex: number, categoryName: string) => {
+      setClassificationResult((prev) => {
+        if (!prev) return prev;
+
+        const expense = prev.uncategorized[expenseIndex];
+        if (!expense) return prev;
+
+        const nextUncategorized = prev.uncategorized.filter(
+          (_, i) => i !== expenseIndex,
+        );
+
+        const existingCategoryIndex = prev.categories.findIndex(
+          (cat) => cat.name === categoryName,
+        );
+
+        let nextCategories;
+        if (existingCategoryIndex >= 0) {
+          nextCategories = prev.categories.map((cat, i) =>
+            i === existingCategoryIndex
+              ? { ...cat, expenses: [...cat.expenses, expense] }
+              : cat,
+          );
+        } else {
+          nextCategories = [
+            ...prev.categories,
+            { name: categoryName, expenses: [expense] },
+          ];
+        }
+
+        return {
+          categories: nextCategories,
+          uncategorized: nextUncategorized,
+        };
+      });
+    },
+    [],
+  );
+
+  const resetClassificationFeedback = () => {
+    setClassificationResult(null);
+    setClassificationError(null);
+  };
+
   const processFile = (file: File | null) => {
+    resetClassificationFeedback();
+
     if (!file) {
       setSelectedFile(null);
       setFileError(null);
@@ -67,9 +146,49 @@ export default function Home() {
     processFile(file);
   };
 
+  const handleClassifyExpenses = async () => {
+    if (!selectedFile) {
+      return;
+    }
+
+    setIsClassifying(true);
+    setClassificationResult(null);
+    setClassificationError(null);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      // const response = await fetch("/api/expenses/classify", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+
+      // const message = await response.json();
+
+      // if (!response.ok) {
+      //   setClassificationError(message || t("errors.uploadFailed"));
+      //   return;
+      // }
+
+      // setClassificationResult(message);
+      const sortedResult = {
+        ...categoriesMock,
+        categories: [...categoriesMock.categories].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      };
+      setClassificationResult(sortedResult);
+    } catch {
+      setClassificationError(t("errors.uploadFailed"));
+    } finally {
+      setIsClassifying(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="space-y-3">
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             {t("label")}
@@ -127,9 +246,32 @@ export default function Home() {
         </section>
 
         {selectedFile ? (
-          <Button className="w-full self-start md:w-auto">
-            {t("classifyButton")}
-          </Button>
+          <div className="w-full self-start space-y-10">
+            <Button
+              className="w-full md:w-auto"
+              onClick={handleClassifyExpenses}
+              disabled={isClassifying}
+              aria-busy={isClassifying}
+            >
+              {isClassifying ? t("classifyingButton") : t("classifyButton")}
+            </Button>
+
+            {isClassifying ? <ClassificationProgress /> : null}
+
+            {classificationError ? (
+              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {classificationError}
+              </p>
+            ) : null}
+
+            {classificationResult ? (
+              <ClassificationResults
+                data={classificationResult}
+                categories={categories}
+                onAssign={handleAssignExpense}
+              />
+            ) : null}
+          </div>
         ) : null}
       </div>
     </main>

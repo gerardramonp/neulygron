@@ -9,8 +9,10 @@
     "uploadCta": "Choose PDF",
     "selectedFileLabel": "Selected file",
     "classifyButton": "Classify expenses",
+    "classifyingButton": "Classifying...",
     "errors": {
-      "invalidType": "Please upload a PDF file."
+      "invalidType": "Please upload a PDF file.",
+      "uploadFailed": "We couldn't classify your file. Please try again."
     }
   },
   "ConfigPage": {
@@ -24,6 +26,34 @@
       "unableToLoad": "Unable to load categories.",
       "retry": "Unable to load categories. Please try again."
     }
+  },
+
+  "ClassificationProgress": {
+    "notice": "This usually takes 2–3 minutes. Hang tight!",
+    "steps": {
+      "parsingPdf": "Parsing your PDF...",
+      "extractingExpenses": "Extracting expenses from the document...",
+      "feedingCategories": "Feeding the AI with your categories...",
+      "assigningExpenses": "Assigning expenses to categories...",
+      "searchingUncategorized": "Looking for uncategorized expenses...",
+      "finishingUp": "Almost there, finishing up..."
+    }
+  },
+
+  "ClassificationResults": {
+    "grandTotal": "Total expenses",
+    "uncategorizedTitle": "Uncategorized expenses",
+    "categoriesTitle": "Expenses by category",
+    "concept": "Concept",
+    "amount": "Amount",
+    "actions": "Actions",
+    "category": "Category",
+    "categoryTotal": "Total",
+    "actionButton": "Assign",
+    "assignTitle": "Assign to category",
+    "assignEmpty": "No categories available",
+    "subtotal": "Subtotal",
+    "expensesCount": "{count, plural, one {# expense} other {# expenses}}"
   },
 
   "CreateCategoryDialog": {

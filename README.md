@@ -18,6 +18,7 @@ Copy `.env` and set the following keys:
 - `DB_USER` / `DB_PASSWORD`: credentials for the `mongodb+srv://` cluster (`neulygrondb.khimgi9.mongodb.net`).
 - `AUTH_SECRET`: long random string used to sign JWTs (`openssl rand -base64 32`).
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`: OAuth credentials from the Google Cloud console (Web application, redirect URI `http://localhost:3000/api/auth/callback/google`).
+- `AI_GATEWAY_API_KEY`: Vercel AI Gateway API key used by the AI SDK packages per [Vercel's Next.js App Router guide](https://ai-sdk.dev/docs/getting-started/nextjs-app-router).
 
 `lib/mongodb.ts` automatically builds the connection string from the DB credentials, but you can also set `MONGODB_URI` explicitly if you prefer.
 
