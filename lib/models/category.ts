@@ -24,7 +24,7 @@ const CategorySchema = new Schema(
     },
     position: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
     },
   },

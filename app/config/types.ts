@@ -2,6 +2,6 @@ export type Category = {
   id: string;
   name: string;
   description: string;
-  position: number;
+  position?: number;
   userId?: string;
 };
