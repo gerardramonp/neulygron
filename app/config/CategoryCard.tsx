@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Loader2, Trash2 } from "lucide-react";
+import { Check, GripVertical, Loader2, Trash2 } from "lucide-react";
 
 import type { Category } from "./types";
 
@@ -26,6 +28,20 @@ export default function CategoryCard({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isBusy = isSaving || isDeleting;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   const handleNameClick = () => {
     setIsEditingName(true);
@@ -137,8 +153,23 @@ export default function CategoryCard({
   };
 
   return (
-    <article className="rounded-2xl border border-border bg-card/60 p-4 text-card-foreground shadow-sm sm:p-6">
+    <article
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-2xl border border-border bg-card/60 p-4 text-card-foreground shadow-sm sm:p-6 ${
+        isDragging ? "opacity-50 shadow-lg" : ""
+      }`}
+    >
       <div className="flex flex-col gap-4 sm:flex-col md:flex-row md:items-start md:gap-6">
+        <button
+          type="button"
+          className="hidden cursor-grab touch-none text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex md:items-center md:self-stretch"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5" aria-hidden />
+          <span className="sr-only">Drag to reorder {category.name}</span>
+        </button>
         <div className="space-y-2 md:w-[220px]">
           {isEditingName ? (
             <Input
