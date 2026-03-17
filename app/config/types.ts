@@ -3,5 +3,6 @@ export type Category = {
   name: string;
   description: string;
   position: number;
+  concepts?: string[];
   userId?: string;
 };

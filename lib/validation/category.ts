@@ -33,5 +33,16 @@ export const updateCategorySchema = z
     },
   );
 
+const conceptSchema = z
+  .string()
+  .trim()
+  .min(1, "Concept cannot be empty")
+  .max(400, "Concept cannot exceed 400 characters");
+
+export const addConceptSchema = z.object({
+  concept: conceptSchema,
+});
+
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
+export type AddConceptInput = z.infer<typeof addConceptSchema>;

@@ -50,7 +50,7 @@ export async function PATCH(request: Request) {
     await CategoryModel.bulkWrite(bulkOps);
 
     const categories = await CategoryModel.find({ userId: session.user.id })
-      .select("name description userId position")
+      .select("name description userId position concepts")
       .sort({ position: 1 })
       .lean();
 
@@ -61,6 +61,7 @@ export async function PATCH(request: Request) {
         description: category.description ?? "",
         userId: category.userId.toString(),
         position: category.position,
+        concepts: category.concepts ?? [],
       })),
     });
   } catch (error) {

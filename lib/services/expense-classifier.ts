@@ -10,6 +10,7 @@ import {
 export interface CategoryData {
   name: string;
   description?: string | null | undefined;
+  concepts?: string[];
 }
 
 export async function extractExpensesFromText(
@@ -59,10 +60,17 @@ export async function classifyExpenses(
   const hasPredefinedCategories = categories.length > 0;
   const categoryNames = categories.map((c) => c.name);
 
-  // Format categories as a clear list
+  // Format categories with description and example concepts (learned from user assignments)
   const categoryListText = hasPredefinedCategories
     ? categories
-        .map((c) => `• ${c.name}${c.description ? ` - ${c.description}` : ""}`)
+        .map((c) => {
+          const desc = c.description ? ` - ${c.description}` : "";
+          const concepts =
+            (c.concepts?.length ?? 0) > 0
+              ? `\n  Example concepts (assign similar expenses here): ${(c.concepts ?? []).join(", ")}`
+              : "";
+          return `• ${c.name}${desc}${concepts}`;
+        })
         .join("\n")
     : "";
 
@@ -74,12 +82,14 @@ Some expenses may not fit any category. Those MUST be returned under "uncategori
 IMPORTANT:
 Every expense MUST appear in the output exactly once. Missing or duplicated expenses are not allowed.
 
+Use both the category name/description and the "Example concepts" (when present) to decide. Expenses whose concept is similar or identical to an example concept for a category should be placed in that category.
+
 ${
   hasPredefinedCategories
     ? `CATEGORIES TO USE (use these names EXACTLY, case sensitive):
 ${categoryNames.map((n) => `- ${n}`).join("\n")}
 
-CATEGORY DEFINITIONS:
+CATEGORY DEFINITIONS AND EXAMPLE CONCEPTS:
 ${categoryListText}`
     : `No predefined categories provided. Create logical category names like "Groceries", "Transportation", "Entertainment", "Utilities", "Dining", etc.`
 }
