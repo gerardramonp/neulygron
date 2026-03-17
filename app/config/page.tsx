@@ -2,6 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { Separator } from "@/components/ui/separator";
 import CategoryCard from "./CategoryCard";
@@ -13,6 +28,13 @@ export default function ConfigPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const t = useTranslations("ConfigPage");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -78,6 +100,43 @@ export default function ConfigPage() {
     setFetchError(null);
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+
+    const reordered = arrayMove(categories, oldIndex, newIndex).map(
+      (category, index) => ({
+        ...category,
+        position: index,
+      }),
+    );
+
+    setCategories(reordered);
+
+    try {
+      const response = await fetch("/api/categories/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          positions: reordered.map((c) => ({ id: c.id, position: c.position })),
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        setFetchError(payload?.message ?? "Unable to reorder categories.");
+      }
+    } catch {
+      setFetchError("Unable to reorder categories. Please try again.");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -107,17 +166,28 @@ export default function ConfigPage() {
           ) : categories.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("emptyState")}</p>
           ) : (
-            categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                category={category}
-                onFieldChange={(field, value) =>
-                  handleFieldChange(category.id, field, value)
-                }
-                onDelete={() => handleDelete(category.id)}
-                onError={setFetchError}
-              />
-            ))
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={categories.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {categories.map((category) => (
+                  <CategoryCard
+                    key={category.id}
+                    category={category}
+                    onFieldChange={(field, value) =>
+                      handleFieldChange(category.id, field, value)
+                    }
+                    onDelete={() => handleDelete(category.id)}
+                    onError={setFetchError}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>

@@ -22,11 +22,17 @@ const CategorySchema = new Schema(
       required: true,
       index: true,
     },
+    position: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   { timestamps: true },
 );
 
 CategorySchema.index({ userId: 1, name: 1 }, { unique: true });
+CategorySchema.index({ userId: 1, position: 1 });
 
 export type Category = InferSchemaType<typeof CategorySchema> & {
   _id: Types.ObjectId;

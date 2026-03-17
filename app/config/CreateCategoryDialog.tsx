@@ -86,6 +86,7 @@ export default function CreateCategoryDialog({
         name: data?.category?.name ?? formValues.name,
         description:
           data?.category?.description ?? formValues.description ?? "",
+
         userId: data?.category?.userId,
       };
 

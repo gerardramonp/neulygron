@@ -19,17 +19,20 @@ export async function GET() {
     await connectToDatabase();
 
     const categories = await CategoryModel.find({ userId: session.user.id })
-      .select("name description userId")
-      .sort({ createdAt: 1 })
+      .select("name description userId position")
+      .sort({ position: 1, createdAt: 1 })
       .lean();
 
+    const categoriesWithPosition = categories.map((category, index) => ({
+      id: category._id.toString(),
+      name: category.name,
+      description: category.description ?? "",
+      userId: category.userId.toString(),
+      position: category.position ?? index,
+    }));
+
     return NextResponse.json({
-      categories: categories.map((category) => ({
-        id: category._id.toString(),
-        name: category.name,
-        description: category.description ?? "",
-        userId: category.userId.toString(),
-      })),
+      categories: categoriesWithPosition,
     });
   } catch (error) {
     logger.error("Failed to fetch categories", error, {
@@ -80,10 +83,20 @@ export async function POST(request: Request) {
       );
     }
 
+    const maxPositionCategory = await CategoryModel.findOne({
+      userId: session.user.id,
+    })
+      .sort({ position: -1 })
+      .select("position")
+      .lean();
+
+    const nextPosition = (maxPositionCategory?.position ?? -1) + 1;
+
     const createdCategory = await CategoryModel.create({
       name: parsed.data.name,
       description: parsed.data.description ?? "",
       userId: session.user.id,
+      position: nextPosition,
     });
 
     return NextResponse.json(
@@ -94,6 +107,7 @@ export async function POST(request: Request) {
           name: createdCategory.name,
           description: createdCategory.description,
           userId: createdCategory.userId.toString(),
+          position: createdCategory.position,
         },
       },
       { status: 201 },
