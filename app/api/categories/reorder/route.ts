@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession, Session } from "next-auth";
 import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongodb";
@@ -17,7 +17,7 @@ const reorderSchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-  let session;
+  let session: Session | null = null;
   try {
     session = await getServerSession(authOptions);
 
@@ -42,7 +42,7 @@ export async function PATCH(request: Request) {
 
     const bulkOps = parsed.data.positions.map(({ id, position }) => ({
       updateOne: {
-        filter: { _id: id, userId: session.user.id },
+        filter: { _id: id, userId: session?.user?.id || "" },
         update: { $set: { position } },
       },
     }));
@@ -67,7 +67,7 @@ export async function PATCH(request: Request) {
     logger.error("Failed to reorder categories", error, {
       route: "/api/categories/reorder",
       method: "PATCH",
-      userId: session?.user?.id,
+      userId: session?.user?.id || "",
     });
     return NextResponse.json(
       { message: "Something went wrong" },
