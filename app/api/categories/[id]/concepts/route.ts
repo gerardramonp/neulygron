@@ -60,10 +60,38 @@ export async function POST(
 
     const filter = buildCategoryFilter(categoryId, session.user.id);
 
+    // Use a pipeline so we handle categories that don't have concepts yet (legacy docs)
+    // or where concepts is null/non-array. $addToSet alone can fail if the field is missing
+    // in some MongoDB/driver cases or is not an array.
     const updatedCategory = await CategoryModel.findOneAndUpdate(
       filter,
-      { $addToSet: { concepts: concept } },
-      { new: true },
+      [
+        {
+          $set: {
+            concepts: {
+              $let: {
+                vars: {
+                  arr: {
+                    $cond: {
+                      if: { $isArray: "$concepts" },
+                      then: "$concepts",
+                      else: [],
+                    },
+                  },
+                },
+                in: {
+                  $cond: {
+                    if: { $in: [concept, "$$arr"] },
+                    then: "$$arr",
+                    else: { $concatArrays: ["$$arr", [concept]] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+      { new: true, updatePipeline: true },
     ).lean();
 
     if (!updatedCategory) {
