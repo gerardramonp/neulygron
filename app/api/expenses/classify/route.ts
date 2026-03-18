@@ -32,12 +32,13 @@ export async function POST(request: Request) {
     await connectToDatabase();
 
     const categories = await CategoryModel.find({ userId: session.user.id })
-      .select("name description")
+      .select("name description concepts")
       .lean();
 
     const categoriesData: CategoryData[] = categories.map((c) => ({
       name: c.name,
       description: c.description,
+      concepts: c.concepts ?? [],
     }));
 
     const { text } = await parsePdf(validation.file);

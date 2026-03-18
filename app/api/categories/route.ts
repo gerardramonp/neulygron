@@ -19,7 +19,7 @@ export async function GET() {
     await connectToDatabase();
 
     const categories = await CategoryModel.find({ userId: session.user.id })
-      .select("name description userId position")
+      .select("name description userId position concepts")
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
@@ -29,6 +29,7 @@ export async function GET() {
       description: category.description ?? "",
       userId: category.userId.toString(),
       position: category.position ?? index,
+      concepts: category.concepts ?? [],
     }));
 
     return NextResponse.json({

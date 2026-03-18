@@ -27,6 +27,11 @@ const CategorySchema = new Schema(
       required: false,
       default: 0,
     },
+    concepts: {
+      type: [String],
+      default: [],
+      trim: true,
+    },
   },
   { timestamps: true },
 );

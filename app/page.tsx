@@ -47,41 +47,52 @@ export default function Home() {
 
   const handleAssignExpense = useCallback(
     (expenseIndex: number, categoryName: string) => {
-      setClassificationResult((prev) => {
-        if (!prev) return prev;
+      const prev = classificationResult;
+      const expense = prev?.uncategorized[expenseIndex];
+      const category = categories.find((c) => c.name === categoryName);
 
-        const expense = prev.uncategorized[expenseIndex];
-        if (!expense) return prev;
+      setClassificationResult((state) => {
+        if (!state) return state;
+        const exp = state.uncategorized[expenseIndex];
+        if (!exp) return state;
 
-        const nextUncategorized = prev.uncategorized.filter(
+        const nextUncategorized = state.uncategorized.filter(
           (_, i) => i !== expenseIndex,
         );
-
-        const existingCategoryIndex = prev.categories.findIndex(
+        const existingCategoryIndex = state.categories.findIndex(
           (cat) => cat.name === categoryName,
         );
-
         let nextCategories;
         if (existingCategoryIndex >= 0) {
-          nextCategories = prev.categories.map((cat, i) =>
+          nextCategories = state.categories.map((cat, i) =>
             i === existingCategoryIndex
-              ? { ...cat, expenses: [...cat.expenses, expense] }
+              ? { ...cat, expenses: [...cat.expenses, exp] }
               : cat,
           );
         } else {
           nextCategories = [
-            ...prev.categories,
-            { name: categoryName, expenses: [expense] },
+            ...state.categories,
+            { name: categoryName, expenses: [exp] },
           ];
         }
-
         return {
           categories: nextCategories,
           uncategorized: nextUncategorized,
         };
       });
+
+      // Persist concept on category so the model improves over time (only for existing user categories)
+      if (expense?.concept?.trim() && category?.id) {
+        fetch(`/api/categories/${category.id}/concepts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ concept: expense.concept.trim() }),
+        }).catch(() => {
+          // Silently ignore; UI already updated
+        });
+      }
     },
-    [],
+    [classificationResult, categories],
   );
 
   const resetClassificationFeedback = () => {
