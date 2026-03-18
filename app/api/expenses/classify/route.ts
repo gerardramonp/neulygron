@@ -13,6 +13,8 @@ import { validatePdfUpload } from "@/lib/validation/pdf";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  const startMs = performance.now();
+  console.log("cclog starting classify....");
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -64,8 +66,15 @@ export async function POST(request: Request) {
       categoriesData,
     );
 
+    console.log(
+      `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
+    );
     return NextResponse.json(classifiedExpenses, { status: 200 });
   } catch (error) {
+    console.log(
+      `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s (error)`,
+    );
+    console.log(error);
     return NextResponse.json(
       { message: `Unable to process PDF contents., ${error}` },
       { status: 422 },
