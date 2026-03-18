@@ -29,7 +29,7 @@
   },
 
   "ClassificationProgress": {
-    "notice": "This usually takes 2–3 minutes. Hang tight!",
+    "notice": "This can take up to 2–3 minutes. Hang tight!",
     "steps": {
       "parsingPdf": "Parsing your PDF...",
       "extractingExpenses": "Extracting expenses from the document...",
