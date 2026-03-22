@@ -93,6 +93,72 @@ export default function Home() {
     [classificationResult, categories],
   );
 
+  const handleReassignExpense = useCallback(
+    (
+      fromCategoryName: string,
+      expenseIndex: number,
+      toCategoryName: string,
+    ) => {
+      let movedExpense: { concept: string; amount: number } | undefined;
+
+      setClassificationResult((state) => {
+        if (!state) return state;
+
+        const fromCategory = state.categories.find(
+          (cat) => cat.name === fromCategoryName,
+        );
+        if (!fromCategory) return state;
+
+        const exp = fromCategory.expenses[expenseIndex];
+        if (!exp) return state;
+        movedExpense = exp;
+
+        const nextFromExpenses = fromCategory.expenses.filter(
+          (_, i) => i !== expenseIndex,
+        );
+
+        let nextCategories = state.categories
+          .map((cat) =>
+            cat.name === fromCategoryName
+              ? { ...cat, expenses: nextFromExpenses }
+              : cat,
+          )
+          .filter((cat) => cat.expenses.length > 0);
+
+        const existingTargetIndex = nextCategories.findIndex(
+          (cat) => cat.name === toCategoryName,
+        );
+        if (existingTargetIndex >= 0) {
+          nextCategories = nextCategories.map((cat, i) =>
+            i === existingTargetIndex
+              ? { ...cat, expenses: [...cat.expenses, exp] }
+              : cat,
+          );
+        } else {
+          nextCategories = [
+            ...nextCategories,
+            { name: toCategoryName, expenses: [exp] },
+          ];
+        }
+
+        return { ...state, categories: nextCategories };
+      });
+
+      // Persist concept on target category so the model improves over time
+      const targetCategory = categories.find((c) => c.name === toCategoryName);
+      if (movedExpense?.concept?.trim() && targetCategory?.id) {
+        fetch(`/api/categories/${targetCategory.id}/concepts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ concept: movedExpense.concept.trim() }),
+        }).catch(() => {
+          // Silently ignore; UI already updated
+        });
+      }
+    },
+    [categories],
+  );
+
   const resetClassificationFeedback = () => {
     setClassificationResult(null);
     setClassificationError(null);
@@ -277,6 +343,7 @@ export default function Home() {
                 data={classificationResult}
                 categories={categories}
                 onAssign={handleAssignExpense}
+                onReassign={handleReassignExpense}
               />
             ) : null}
           </div>

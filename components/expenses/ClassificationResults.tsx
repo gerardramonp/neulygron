@@ -22,12 +22,18 @@ interface ClassificationResultsProps {
   data: ClassifiedExpenses;
   categories: Category[];
   onAssign: (expenseIndex: number, categoryName: string) => void;
+  onReassign: (
+    fromCategoryName: string,
+    expenseIndex: number,
+    toCategoryName: string,
+  ) => void;
 }
 
 export function ClassificationResults({
   data,
   categories,
   onAssign,
+  onReassign,
 }: ClassificationResultsProps) {
   const t = useTranslations("ClassificationResults");
 
@@ -154,6 +160,7 @@ export function ClassificationResults({
                   <TableHead className="text-right">
                     {t("categoryTotal")}
                   </TableHead>
+                  <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -175,6 +182,10 @@ export function ClassificationResults({
                       expensesCount={t("expensesCount", {
                         count: category.expenses.length,
                       })}
+                      categories={categories}
+                      onReassign={(expenseIndex, newCategoryName) =>
+                        onReassign(category.name, expenseIndex, newCategoryName)
+                      }
                     />
                   );
                 })}
@@ -188,6 +199,7 @@ export function ClassificationResults({
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatAmount(categorizedTotal)}
                   </TableCell>
+                  <TableCell />
                 </TableRow>
               </TableFooter>
             </Table>

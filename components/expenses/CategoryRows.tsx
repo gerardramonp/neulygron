@@ -1,7 +1,12 @@
+"use client";
+
 import { ChevronRight, ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { TableCell, TableRow } from "@/components/ui/table";
+import { AssignCategoryButton } from "@/components/expenses/AssignCategoryButton";
 import { formatAmount } from "@/lib/utils";
+import type { Category } from "@/app/config/types";
 
 interface CategoryRowsProps {
   name: string;
@@ -10,6 +15,8 @@ interface CategoryRowsProps {
   isExpanded: boolean;
   onToggle: () => void;
   expensesCount: string;
+  categories?: Category[];
+  onReassign?: (expenseIndex: number, newCategoryName: string) => void;
 }
 
 export function CategoryRows({
@@ -19,8 +26,14 @@ export function CategoryRows({
   isExpanded,
   onToggle,
   expensesCount,
+  categories,
+  onReassign,
 }: CategoryRowsProps) {
+  const t = useTranslations("ClassificationResults");
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
+
+  const otherCategories = categories?.filter((c) => c.name !== name) ?? [];
+  const showReassign = !!onReassign && categories !== undefined;
 
   return (
     <>
@@ -43,6 +56,7 @@ export function CategoryRows({
         <TableCell className="text-right font-medium tabular-nums">
           {formatAmount(total)}
         </TableCell>
+        {showReassign ? <TableCell /> : null}
       </TableRow>
 
       {/* Expanded expense rows */}
@@ -56,6 +70,18 @@ export function CategoryRows({
               <TableCell className="text-right tabular-nums text-muted-foreground">
                 {formatAmount(expense.amount)}
               </TableCell>
+              {showReassign ? (
+                <TableCell className="text-right">
+                  <AssignCategoryButton
+                    categories={otherCategories}
+                    onAssign={(newCategoryName) =>
+                      onReassign!(index, newCategoryName)
+                    }
+                    buttonLabel={t("reassignButton")}
+                    popoverTitle={t("reassignTitle")}
+                  />
+                </TableCell>
+              ) : null}
             </TableRow>
           ))
         : null}

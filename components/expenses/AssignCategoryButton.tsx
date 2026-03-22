@@ -22,6 +22,8 @@ import type { Category } from "@/app/config/types";
 interface AssignCategoryButtonProps {
   categories: Category[];
   onAssign: (categoryName: string) => void;
+  buttonLabel?: string;
+  popoverTitle?: string;
 }
 
 function CategoryList({
@@ -60,10 +62,15 @@ function CategoryList({
 export function AssignCategoryButton({
   categories,
   onAssign,
+  buttonLabel,
+  popoverTitle,
 }: AssignCategoryButtonProps) {
   const t = useTranslations("ClassificationResults");
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+
+  const resolvedButtonLabel = buttonLabel ?? t("actionButton");
+  const resolvedPopoverTitle = popoverTitle ?? t("assignTitle");
 
   const handleSelect = (categoryName: string) => {
     onAssign(categoryName);
@@ -75,12 +82,12 @@ export function AssignCategoryButton({
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Button variant="outline" size="sm">
-            {t("actionButton")}
+            {resolvedButtonLabel}
           </Button>
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>{t("assignTitle")}</DrawerTitle>
+            <DrawerTitle>{resolvedPopoverTitle}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-6">
             <CategoryList categories={categories} onSelect={handleSelect} />
@@ -94,12 +101,12 @@ export function AssignCategoryButton({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm">
-          {t("actionButton")}
+          {resolvedButtonLabel}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-2">
         <p className="mb-1 px-3 py-1 text-xs font-medium text-muted-foreground">
-          {t("assignTitle")}
+          {resolvedPopoverTitle}
         </p>
         <CategoryList categories={categories} onSelect={handleSelect} />
       </PopoverContent>
