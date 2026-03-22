@@ -11,6 +11,7 @@ import {
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/app/components/ThemeToggle";
 import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import { ClassifiedExpenses } from "@/lib/validation/expenses";
@@ -198,11 +199,16 @@ export default function Home() {
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
-            {t("label")}
-          </p>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("description")}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-3">
+              <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
+                {t("label")}
+              </p>
+              <h1 className="text-3xl font-bold">{t("title")}</h1>
+              <p className="text-muted-foreground">{t("description")}</p>
+            </div>
+            <ThemeToggle />
+          </div>
         </header>
 
         <section className="rounded-xl border border-dashed border-border/70 bg-card/40 p-6">

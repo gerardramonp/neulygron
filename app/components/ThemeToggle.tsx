@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sun, Moon, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { THEME_COOKIE, type Theme } from "@/lib/theme/config";
+
+const themes: Theme[] = ["light", "dark", "system"];
+
+const icons: Record<Theme, React.ReactNode> = {
+  light: <Sun className="h-4 w-4" />,
+  dark: <Moon className="h-4 w-4" />,
+  system: <Monitor className="h-4 w-4" />,
+};
 
 function readCookie(name: string): string | null {
   const match = document.cookie.match(
@@ -19,48 +29,26 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const html = document.documentElement;
-    const isDark = theme === "dark";
-    html.classList.toggle("dark", isDark);
-
+    html.classList.toggle("dark", theme === "dark");
     const oneYear = 60 * 60 * 24 * 365;
     document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=${oneYear}`;
   }, [theme]);
 
-  function set(next: Theme) {
-    setTheme(next);
+  function cycleTheme() {
+    setTheme((current) => {
+      const idx = themes.indexOf(current);
+      return themes[(idx + 1) % themes.length];
+    });
   }
 
-  const btnBase =
-    "rounded-full px-2 py-1 transition-colors hover:bg-muted hover:ring-1 hover:ring-ring ";
-  const selectedThemeClass = "font-semibold ring-1 ring-ring";
-
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border px-2 py-1 text-sm bg-background text-foreground backdrop-blur">
-      <span className="opacity-70">Theme:</span>
-      <button
-        type="button"
-        onClick={() => set("light")}
-        aria-pressed={theme === "light"}
-        className={`${btnBase} ${theme === "light" ? selectedThemeClass : ""}`}
-      >
-        Light
-      </button>
-      <button
-        type="button"
-        onClick={() => set("dark")}
-        aria-pressed={theme === "dark"}
-        className={`${btnBase} ${theme === "dark" ? selectedThemeClass : ""}`}
-      >
-        Dark
-      </button>
-      <button
-        type="button"
-        onClick={() => set("system")}
-        aria-pressed={theme === "system"}
-        className={`${btnBase} ${theme === "system" ? selectedThemeClass : ""}`}
-      >
-        System
-      </button>
-    </div>
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={cycleTheme}
+      aria-label={`Switch theme (current: ${theme})`}
+    >
+      {icons[theme]}
+    </Button>
   );
 }
