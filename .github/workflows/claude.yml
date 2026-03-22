@@ -30,6 +30,25 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Node and install dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies and start dev server
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_GOOGLE_ID: ${{ secrets.AUTH_GOOGLE_ID }}
+          AUTH_GOOGLE_SECRET: ${{ secrets.AUTH_GOOGLE_SECRET }}
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          NEXTAUTH_URL: http://localhost:3000
+        run: |
+          npm install
+          npx next dev &
+          sleep 5
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
@@ -40,11 +59,24 @@ jobs:
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          custom_instructions: |
+            The project is already set up with all dependencies installed.
+            The server is already running at localhost:3000.
+            If needed, use the mcp__playwright set of tools to launch a browser and interact with the app.
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+          mcp_config: |
+            {
+              "mcpServers": {
+                "playwright": {
+                  "command": "npx",
+                  "args": [
+                    "@playwright/mcp@latest",
+                    "--allowed-origins",
+                    "localhost:3000;cdn.tailwindcss.com;esm.sh"
+                  ]
+                }
+              }
+            }
+
+          allowed_tools: "Bash(npm:*),mcp__playwright__browser_snapshot,mcp__playwright__browser_click,mcp__playwright__browser_navigate,mcp__playwright__browser_type,mcp__playwright__browser_fill_form,mcp__playwright__browser_take_screenshot,mcp__playwright__browser_evaluate,mcp__playwright__browser_wait_for,mcp__playwright__browser_press_key,mcp__playwright__browser_select_option,mcp__playwright__browser_hover,mcp__playwright__browser_drag,mcp__playwright__browser_close,mcp__playwright__browser_tabs,mcp__playwright__browser_network_requests,mcp__playwright__browser_console_messages,mcp__playwright__browser_navigate_back,mcp__playwright__browser_resize,mcp__playwright__browser_handle_dialog,mcp__playwright__browser_file_upload,mcp__playwright__browser_run_code,mcp__playwright__browser_install"
 
