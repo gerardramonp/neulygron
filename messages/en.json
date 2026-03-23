@@ -50,7 +50,9 @@
     "category": "Category",
     "categoryTotal": "Total",
     "actionButton": "Assign",
+    "reassignButton": "Reassign",
     "assignTitle": "Assign to category",
+    "reassignTitle": "Reassign to category",
     "assignEmpty": "No categories available",
     "subtotal": "Subtotal",
     "expensesCount": "{count, plural, one {# expense} other {# expenses}}"

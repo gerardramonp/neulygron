@@ -15,19 +15,25 @@ import {
 } from "@/components/ui/table";
 import { CategoryRows } from "@/components/expenses/CategoryRows";
 import { formatAmount } from "@/lib/utils";
-import type { ClassifiedExpenses } from "@/lib/validation/expenses";
+import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { Category } from "@/app/config/types";
 
 interface ClassificationResultsProps {
-  data: ClassifiedExpenses;
+  data: ClassifiedExpensesWithPositions;
   categories: Category[];
   onAssign: (expenseIndex: number, categoryName: string) => void;
+  onReassign: (
+    fromCategoryName: string,
+    expenseIndex: number,
+    toCategoryName: string,
+  ) => void;
 }
 
 export function ClassificationResults({
   data,
   categories,
   onAssign,
+  onReassign,
 }: ClassificationResultsProps) {
   const t = useTranslations("ClassificationResults");
 
@@ -154,6 +160,7 @@ export function ClassificationResults({
                   <TableHead className="text-right">
                     {t("categoryTotal")}
                   </TableHead>
+                  <TableHead className="text-right" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -175,6 +182,14 @@ export function ClassificationResults({
                       expensesCount={t("expensesCount", {
                         count: category.expenses.length,
                       })}
+                      categories={categories}
+                      onReassign={(expenseIndex, targetCategoryName) =>
+                        onReassign(
+                          category.name,
+                          expenseIndex,
+                          targetCategoryName,
+                        )
+                      }
                     />
                   );
                 })}
@@ -188,6 +203,7 @@ export function ClassificationResults({
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatAmount(categorizedTotal)}
                   </TableCell>
+                  <TableCell />
                 </TableRow>
               </TableFooter>
             </Table>

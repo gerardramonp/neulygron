@@ -34,8 +34,16 @@ export async function POST(request: Request) {
     await connectToDatabase();
 
     const categories = await CategoryModel.find({ userId: session.user.id })
-      .select("name description concepts")
+      .select("name description concepts position")
+      .sort({ position: 1, createdAt: 1 })
       .lean();
+
+    const orderByName = new Map(
+      categories.map((c) => [
+        c.name,
+        c.position ?? Number.POSITIVE_INFINITY,
+      ]),
+    );
 
     const categoriesData: CategoryData[] = categories.map((c) => ({
       name: c.name,
@@ -66,10 +74,35 @@ export async function POST(request: Request) {
       categoriesData,
     );
 
+    if (!classifiedExpenses) {
+      return NextResponse.json(
+        { message: "Unable to classify expenses." },
+        { status: 422 },
+      );
+    }
+
+    const categoriesOrdered = [...classifiedExpenses.categories].map(
+      (cat) => ({
+        ...cat,
+        position:
+          orderByName.get(cat.name) ?? Number.POSITIVE_INFINITY,
+      }),
+    );
+    categoriesOrdered.sort((a, b) => {
+      if (a.position !== b.position) return a.position - b.position;
+      return a.name.localeCompare(b.name);
+    });
+
     console.log(
       `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
     );
-    return NextResponse.json(classifiedExpenses, { status: 200 });
+    return NextResponse.json(
+      {
+        ...classifiedExpenses,
+        categories: categoriesOrdered,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     console.log(
       `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s (error)`,
