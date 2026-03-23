@@ -23,12 +23,12 @@ export async function GET() {
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
-    const categoriesWithPosition = categories.map((category, index) => ({
+    const categoriesWithPosition = categories.map((category) => ({
       id: category._id.toString(),
       name: category.name,
       description: category.description ?? "",
       userId: category.userId.toString(),
-      position: category.position ?? index,
+      position: category.position,
       concepts: category.concepts ?? [],
     }));
 

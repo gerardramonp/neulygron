@@ -68,12 +68,15 @@ export default function Home() {
               : cat,
           );
         } else {
-          const pos =
-            categories.find((c) => c.name === categoryName)?.position ??
-            Number.POSITIVE_INFINITY;
+          const matched = categories.find((c) => c.name === categoryName);
+          if (!matched) return state;
           nextCategories = [
             ...state.categories,
-            { name: categoryName, expenses: [exp], position: pos },
+            {
+              name: categoryName,
+              expenses: [exp],
+              position: matched.position,
+            },
           ];
         }
         return {
@@ -139,12 +142,15 @@ export default function Home() {
               : cat,
           );
         } else {
-          const pos =
-            categories.find((c) => c.name === toCategoryName)?.position ??
-            Number.POSITIVE_INFINITY;
+          const matched = categories.find((c) => c.name === toCategoryName);
+          if (!matched) return state;
           nextCategories = [
             ...afterRemove,
-            { name: toCategoryName, expenses: [exp], position: pos },
+            {
+              name: toCategoryName,
+              expenses: [exp],
+              position: matched.position,
+            },
           ];
         }
         return { ...state, categories: nextCategories };
@@ -256,14 +262,8 @@ export default function Home() {
       const sortedResult: ClassifiedExpensesWithPositions = {
         ...message,
         categories: [...(message.categories ?? [])].sort((a, b) => {
-          const oa =
-            positionByName.get(a.name) ??
-            a.position ??
-            Number.POSITIVE_INFINITY;
-          const ob =
-            positionByName.get(b.name) ??
-            b.position ??
-            Number.POSITIVE_INFINITY;
+          const oa = positionByName.get(a.name) ?? a.position;
+          const ob = positionByName.get(b.name) ?? b.position;
           if (oa !== ob) return oa - ob;
           return a.name.localeCompare(b.name);
         }),
