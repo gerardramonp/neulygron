@@ -24,8 +24,7 @@ const CategorySchema = new Schema(
     },
     position: {
       type: Number,
-      required: false,
-      default: 0,
+      required: true,
     },
     concepts: {
       type: [String],

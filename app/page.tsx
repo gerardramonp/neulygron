@@ -13,7 +13,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
-import { ClassifiedExpenses } from "@/lib/validation/expenses";
+import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { Category } from "@/app/config/types";
 
 export default function Home() {
@@ -22,7 +22,7 @@ export default function Home() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [classificationResult, setClassificationResult] =
-    useState<ClassifiedExpenses | null>(null);
+    useState<ClassifiedExpensesWithPositions | null>(null);
   const [classificationError, setClassificationError] = useState<string | null>(
     null,
   );
@@ -68,9 +68,12 @@ export default function Home() {
               : cat,
           );
         } else {
+          const pos =
+            categories.find((c) => c.name === categoryName)?.position ??
+            Number.POSITIVE_INFINITY;
           nextCategories = [
             ...state.categories,
-            { name: categoryName, expenses: [exp] },
+            { name: categoryName, expenses: [exp], position: pos },
           ];
         }
         return {
@@ -82,6 +85,73 @@ export default function Home() {
       // Persist concept on category so the model improves over time (only for existing user categories)
       if (expense?.concept?.trim() && category?.id) {
         fetch(`/api/categories/${category.id}/concepts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ concept: expense.concept.trim() }),
+        }).catch(() => {
+          // Silently ignore; UI already updated
+        });
+      }
+    },
+    [classificationResult, categories],
+  );
+
+  const handleReassignExpense = useCallback(
+    (
+      fromCategoryName: string,
+      expenseIndex: number,
+      toCategoryName: string,
+    ) => {
+      if (fromCategoryName === toCategoryName) return;
+
+      const prev = classificationResult;
+      const sourceCat = prev?.categories.find(
+        (c) => c.name === fromCategoryName,
+      );
+      const expense = sourceCat?.expenses[expenseIndex];
+      const targetCategory = categories.find((c) => c.name === toCategoryName);
+
+      setClassificationResult((state) => {
+        if (!state) return state;
+        const sourceIndex = state.categories.findIndex(
+          (c) => c.name === fromCategoryName,
+        );
+        if (sourceIndex < 0) return state;
+        const source = state.categories[sourceIndex];
+        const exp = source.expenses[expenseIndex];
+        if (!exp) return state;
+
+        const nextSourceExpenses = source.expenses.filter(
+          (_, i) => i !== expenseIndex,
+        );
+        const afterRemove = state.categories.map((cat, i) =>
+          i === sourceIndex ? { ...cat, expenses: nextSourceExpenses } : cat,
+        );
+
+        const targetIndex = afterRemove.findIndex(
+          (cat) => cat.name === toCategoryName,
+        );
+        let nextCategories;
+        if (targetIndex >= 0) {
+          nextCategories = afterRemove.map((cat, i) =>
+            i === targetIndex
+              ? { ...cat, expenses: [...cat.expenses, exp] }
+              : cat,
+          );
+        } else {
+          const pos =
+            categories.find((c) => c.name === toCategoryName)?.position ??
+            Number.POSITIVE_INFINITY;
+          nextCategories = [
+            ...afterRemove,
+            { name: toCategoryName, expenses: [exp], position: pos },
+          ];
+        }
+        return { ...state, categories: nextCategories };
+      });
+
+      if (expense?.concept?.trim() && targetCategory?.id) {
+        fetch(`/api/categories/${targetCategory.id}/concepts`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ concept: expense.concept.trim() }),
@@ -180,11 +250,23 @@ export default function Home() {
         return;
       }
 
-      const sortedResult = {
+      const positionByName = new Map(
+        categories.map((c) => [c.name, c.position]),
+      );
+      const sortedResult: ClassifiedExpensesWithPositions = {
         ...message,
-        categories: [...(message.categories ?? [])].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
+        categories: [...(message.categories ?? [])].sort((a, b) => {
+          const oa =
+            positionByName.get(a.name) ??
+            a.position ??
+            Number.POSITIVE_INFINITY;
+          const ob =
+            positionByName.get(b.name) ??
+            b.position ??
+            Number.POSITIVE_INFINITY;
+          if (oa !== ob) return oa - ob;
+          return a.name.localeCompare(b.name);
+        }),
       };
       setClassificationResult(sortedResult);
     } catch {
@@ -277,6 +359,7 @@ export default function Home() {
                 data={classificationResult}
                 categories={categories}
                 onAssign={handleAssignExpense}
+                onReassign={handleReassignExpense}
               />
             ) : null}
           </div>

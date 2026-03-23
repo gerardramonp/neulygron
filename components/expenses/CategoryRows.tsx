@@ -1,7 +1,11 @@
+"use client";
+
 import { ChevronRight, ChevronDown } from "lucide-react";
 
+import { AssignCategoryButton } from "@/components/expenses/AssignCategoryButton";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatAmount } from "@/lib/utils";
+import type { Category } from "@/app/config/types";
 
 interface CategoryRowsProps {
   name: string;
@@ -10,6 +14,8 @@ interface CategoryRowsProps {
   isExpanded: boolean;
   onToggle: () => void;
   expensesCount: string;
+  categories: Category[];
+  onReassign: (expenseIndex: number, targetCategoryName: string) => void;
 }
 
 export function CategoryRows({
@@ -19,6 +25,8 @@ export function CategoryRows({
   isExpanded,
   onToggle,
   expensesCount,
+  categories,
+  onReassign,
 }: CategoryRowsProps) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -43,6 +51,7 @@ export function CategoryRows({
         <TableCell className="text-right font-medium tabular-nums">
           {formatAmount(total)}
         </TableCell>
+        <TableCell className="w-[1%] whitespace-nowrap text-right" />
       </TableRow>
 
       {/* Expanded expense rows */}
@@ -55,6 +64,14 @@ export function CategoryRows({
               </TableCell>
               <TableCell className="text-right tabular-nums text-muted-foreground">
                 {formatAmount(expense.amount)}
+              </TableCell>
+              <TableCell className="text-right">
+                <AssignCategoryButton
+                  mode="reassign"
+                  categories={categories}
+                  excludeCategoryNames={[name]}
+                  onAssign={(categoryName) => onReassign(index, categoryName)}
+                />
               </TableCell>
             </TableRow>
           ))

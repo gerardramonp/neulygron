@@ -44,3 +44,14 @@ export const classifyExpensesSchema = z.object({
 
 export type ExtractedExpenses = z.infer<typeof extractExpensesSchema>;
 export type ClassifiedExpenses = z.infer<typeof classifyExpensesSchema>;
+
+/** Categories as shown after classify API attaches sort `position` (user order or sentinel). */
+export type ClassifiedExpenseCategoryWithPosition =
+  ClassifiedExpenses["categories"][number] & { position: number };
+
+export type ClassifiedExpensesWithPositions = Omit<
+  ClassifiedExpenses,
+  "categories"
+> & {
+  categories: ClassifiedExpenseCategoryWithPosition[];
+};

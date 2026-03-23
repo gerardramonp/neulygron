@@ -2,6 +2,7 @@
   "categories": [
     {
       "name": "Compra",
+      "position": 0,
       "expenses": [
         {
           "concept": "Esclat",
@@ -87,6 +88,7 @@
     },
     {
       "name": "Comer fuera",
+      "position": 1,
       "expenses": [
         {
           "concept": "Uber Eats",
@@ -104,6 +106,7 @@
     },
     {
       "name": "Desayunos",
+      "position": 2,
       "expenses": [
         {
           "concept": "Santa Gloria",
@@ -149,6 +152,7 @@
     },
     {
       "name": "Ocio",
+      "position": 3,
       "expenses": [
         {
           "concept": "Kinepolis",
@@ -166,6 +170,7 @@
     },
     {
       "name": "Medicamentos",
+      "position": 4,
       "expenses": [
         {
           "concept": "Farmacia Laura Pons",
@@ -175,6 +180,7 @@
     },
     {
       "name": "Casa",
+      "position": 5,
       "expenses": [
         {
           "concept": "Iberdrola",
@@ -184,6 +190,7 @@
     },
     {
       "name": "Otros",
+      "position": 6,
       "expenses": [
         {
           "concept": "Coromines",

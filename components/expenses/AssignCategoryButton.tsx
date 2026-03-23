@@ -17,11 +17,14 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/app/config/types";
 
 interface AssignCategoryButtonProps {
   categories: Category[];
   onAssign: (categoryName: string) => void;
+  excludeCategoryNames?: string[];
+  mode?: "assign" | "reassign";
 }
 
 function CategoryList({
@@ -60,30 +63,60 @@ function CategoryList({
 export function AssignCategoryButton({
   categories,
   onAssign,
+  excludeCategoryNames = [],
+  mode = "assign",
 }: AssignCategoryButtonProps) {
   const t = useTranslations("ClassificationResults");
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+
+  const exclude = new Set(excludeCategoryNames);
+  const selectableCategories = categories
+    .filter((c) => !exclude.has(c.name))
+    .sort((a, b) => {
+      if (a.position !== b.position) return a.position - b.position;
+      return a.name.localeCompare(b.name);
+    });
 
   const handleSelect = (categoryName: string) => {
     onAssign(categoryName);
     setOpen(false);
   };
 
+  const actionLabel =
+    mode === "reassign" ? t("reassignButton") : t("actionButton");
+  const pickerTitle =
+    mode === "reassign" ? t("reassignTitle") : t("assignTitle");
+
+  const triggerClassName =
+    mode === "reassign"
+      ? cn(
+          "border border-border/40 bg-muted/60 text-muted-foreground shadow-none",
+          "hover:border-border hover:bg-background hover:text-foreground hover:shadow-sm",
+        )
+      : undefined;
+
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
-          <Button variant="outline" size="sm">
-            {t("actionButton")}
+          <Button
+            variant={mode === "reassign" ? "ghost" : "outline"}
+            size="sm"
+            className={triggerClassName}
+          >
+            {actionLabel}
           </Button>
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>{t("assignTitle")}</DrawerTitle>
+            <DrawerTitle>{pickerTitle}</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-6">
-            <CategoryList categories={categories} onSelect={handleSelect} />
+            <CategoryList
+              categories={selectableCategories}
+              onSelect={handleSelect}
+            />
           </div>
         </DrawerContent>
       </Drawer>
@@ -93,15 +126,22 @@ export function AssignCategoryButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          {t("actionButton")}
+        <Button
+          variant={mode === "reassign" ? "ghost" : "outline"}
+          size="sm"
+          className={triggerClassName}
+        >
+          {actionLabel}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-2">
         <p className="mb-1 px-3 py-1 text-xs font-medium text-muted-foreground">
-          {t("assignTitle")}
+          {pickerTitle}
         </p>
-        <CategoryList categories={categories} onSelect={handleSelect} />
+        <CategoryList
+          categories={selectableCategories}
+          onSelect={handleSelect}
+        />
       </PopoverContent>
     </Popover>
   );
