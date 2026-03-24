@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { yearMonthRegex } from "@/lib/validation/monthly-expense-report";
+
 const expenseSchema = z.object({
   concept: z
     .string()
@@ -15,6 +17,13 @@ export const extractExpensesSchema = z.object({
     .array(expenseSchema)
     .describe(
       "All expenses found in the document. Each expense must have a concept and amount.",
+    ),
+  proposedYearMonth: z
+    .string()
+    .regex(yearMonthRegex, "must be YYYY-MM")
+    .nullable()
+    .describe(
+      "Calendar month (YYYY-MM) this document should be filed under: prefer statement period end date, billing cycle month, or primary invoice date. Null only if no reliable date appears in the document.",
     ),
 });
 

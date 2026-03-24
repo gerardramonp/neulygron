@@ -2,15 +2,9 @@ import "dotenv/config";
 import * as fs from "fs";
 import { extractExpensesFromText } from "../lib/services/expense-classifier";
 import { parsePdf } from "../lib/pdf";
+import type { ExtractedExpenses } from "../lib/validation/expenses";
 
-interface Expense {
-  concept: string;
-  amount: number;
-}
-
-interface ExtractedExpenses {
-  expenses: Expense[];
-}
+type Expense = ExtractedExpenses["expenses"][number];
 
 interface ComparisonResult {
   expenseCount: { values: number[]; consistent: boolean };
@@ -121,6 +115,17 @@ async function runExtractionConsistencyTest(): Promise<void> {
   console.log(
     `  Concepts Match: ${comparison.concepts.consistent ? "✓" : "✗"}`,
   );
+
+  const periods = results.map((r) => r.proposedYearMonth ?? "(null)");
+  const periodConsistent = periods.every((p) => p === periods[0]);
+  console.log(
+    `  Proposed YYYY-MM: ${periodConsistent ? "✓" : "✗"} [${periods.join(", ")}]`,
+  );
+  if (!periodConsistent) {
+    console.log(
+      "    (Period can legitimately vary when the model is uncertain; expense checks above are the strict gate.)\n",
+    );
+  }
 
   if (!comparison.amounts.consistent) {
     console.log(`\n  Amount differences:`);

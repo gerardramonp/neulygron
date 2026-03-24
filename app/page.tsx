@@ -10,8 +10,6 @@ import {
   useRef,
 } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import categoriseMock from "@/mocks/caterogiseMock.json";
-
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -19,7 +17,11 @@ import { ClassificationProgress } from "@/components/expenses/ClassificationProg
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { Category } from "@/app/config/types";
-import { buildYearRange, formatYearMonth } from "@/lib/year-month";
+import {
+  buildYearRange,
+  formatYearMonth,
+  parseYearMonth,
+} from "@/lib/year-month";
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -44,7 +46,11 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const anchorYear = useMemo(() => new Date().getFullYear(), []);
-  const yearOptions = useMemo(() => buildYearRange(anchorYear), [anchorYear]);
+  const yearOptions = useMemo(() => {
+    const base = buildYearRange(anchorYear);
+    if (base.includes(reportYear)) return base;
+    return [...base, reportYear].sort((a, b) => a - b);
+  }, [anchorYear, reportYear]);
 
   const monthOptions = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
@@ -278,33 +284,49 @@ export default function Home() {
     formData.append("file", selectedFile);
 
     try {
-      // const response = await fetch("/api/expenses/classify", {
-      //   method: "POST",
-      //   body: formData,
-      // });
+      const response = await fetch("/api/expenses/classify", {
+        method: "POST",
+        body: formData,
+      });
 
-      // const message = await response.json();
+      const message = (await response.json()) as Record<string, unknown> & {
+        categories?: ClassifiedExpensesWithPositions["categories"];
+        uncategorized?: ClassifiedExpensesWithPositions["uncategorized"];
+        proposedYearMonth?: string | null;
+      };
 
-      // if (!response.ok) {
-      //   setClassificationError(message?.message ?? t("errors.uploadFailed"));
-      //   return;
-      // }
+      if (!response.ok) {
+        setClassificationError(
+          typeof message?.message === "string"
+            ? message.message
+            : t("errors.uploadFailed"),
+        );
+        return;
+      }
 
       const positionByName = new Map(
         categories.map((c) => [c.name, c.position]),
       );
 
-      const message = categoriseMock;
       const sortedResult: ClassifiedExpensesWithPositions = {
-        ...message,
         categories: [...(message.categories ?? [])].sort((a, b) => {
           const oa = positionByName.get(a.name) ?? a.position;
           const ob = positionByName.get(b.name) ?? b.position;
           if (oa !== ob) return oa - ob;
           return a.name.localeCompare(b.name);
         }),
+        uncategorized: message.uncategorized ?? [],
       };
       setClassificationResult(sortedResult);
+
+      const proposed =
+        typeof message.proposedYearMonth === "string"
+          ? parseYearMonth(message.proposedYearMonth)
+          : null;
+      if (proposed) {
+        setReportYear(proposed.year);
+        setReportMonth(proposed.month);
+      }
     } catch {
       setClassificationError(t("errors.uploadFailed"));
     } finally {
