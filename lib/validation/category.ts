@@ -15,10 +15,12 @@ const descriptionSchema = z
     "Description must be at least 10 characters when provided",
   );
 
-export const createCategorySchema = z.object({
-  name: nameSchema,
-  description: descriptionSchema.optional().transform((value) => value ?? ""),
-});
+export const createCategorySchema = z
+  .object({
+    name: nameSchema,
+    description: descriptionSchema.optional().transform((value) => value ?? ""),
+  })
+  .strict();
 
 export const updateCategorySchema = z
   .object({

@@ -16,6 +16,7 @@ interface CategoryRowsProps {
   expensesCount: string;
   categories: Category[];
   onReassign: (expenseIndex: number, targetCategoryName: string) => void;
+  readOnly?: boolean;
 }
 
 export function CategoryRows({
@@ -27,6 +28,7 @@ export function CategoryRows({
   expensesCount,
   categories,
   onReassign,
+  readOnly = false,
 }: CategoryRowsProps) {
   const Chevron = isExpanded ? ChevronDown : ChevronRight;
 
@@ -66,12 +68,14 @@ export function CategoryRows({
                 {formatAmount(expense.amount)}
               </TableCell>
               <TableCell className="text-right">
-                <AssignCategoryButton
-                  mode="reassign"
-                  categories={categories}
-                  excludeCategoryNames={[name]}
-                  onAssign={(categoryName) => onReassign(index, categoryName)}
-                />
+                {readOnly ? null : (
+                  <AssignCategoryButton
+                    mode="reassign"
+                    categories={categories}
+                    excludeCategoryNames={[name]}
+                    onAssign={(categoryName) => onReassign(index, categoryName)}
+                  />
+                )}
               </TableCell>
             </TableRow>
           ))

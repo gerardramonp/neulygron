@@ -39,10 +39,7 @@ export async function POST(request: Request) {
       .lean();
 
     const orderByName = new Map(
-      categories.map((c) => [
-        c.name,
-        c.position ?? Number.POSITIVE_INFINITY,
-      ]),
+      categories.map((c) => [c.name, c.position]),
     );
 
     const categoriesData: CategoryData[] = categories.map((c) => ({

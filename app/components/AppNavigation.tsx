@@ -4,11 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import clsx from "clsx";
-import { Home, Settings, LogIn, UserPlus, LogOut } from "lucide-react";
+import {
+  Home,
+  Settings,
+  LogIn,
+  UserPlus,
+  LogOut,
+  CalendarDays,
+} from "lucide-react";
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
   { label: "Config", href: "/config", icon: Settings },
+];
+
+const AUTH_NAV_ITEMS = [
+  { label: "Reports", href: "/reports", icon: CalendarDays },
 ];
 
 const GUEST_NAV_ITEMS = [
@@ -21,8 +32,8 @@ export default function AppNavigation() {
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const navItems = isAuthenticated
-    ? NAV_ITEMS
-    : [...NAV_ITEMS, ...GUEST_NAV_ITEMS];
+    ? [...BASE_NAV_ITEMS, ...AUTH_NAV_ITEMS]
+    : [...BASE_NAV_ITEMS, ...GUEST_NAV_ITEMS];
 
   return (
     <>

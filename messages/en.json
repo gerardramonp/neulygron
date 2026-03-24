@@ -10,10 +10,28 @@
     "selectedFileLabel": "Selected file",
     "classifyButton": "Classify expenses",
     "classifyingButton": "Classifying...",
+    "saveSectionTitle": "Save monthly report",
+    "saveYearLabel": "Year",
+    "saveMonthLabel": "Month",
+    "saveReportButton": "Save report",
+    "savingReportButton": "Saving...",
+    "saveReportSuccess": "Report saved for {yearMonth}.",
+    "saveReportError": "Could not save the report. Please try again.",
+    "saveReportUnauthorized": "You must be signed in to save a report.",
     "errors": {
       "invalidType": "Please upload a PDF file.",
       "uploadFailed": "We couldn't classify your file. Please try again."
     }
+  },
+  "ReportsPage": {
+    "label": "Saved reports",
+    "title": "Monthly expense reports",
+    "description": "Pick a year and month to view a report you previously saved.",
+    "yearLabel": "Year",
+    "monthLabel": "Month",
+    "emptyState": "No saved report for this month.",
+    "loadError": "Could not load the report. Please try again.",
+    "updatedAt": "Last updated: {date}"
   },
   "ConfigPage": {
     "label": "AI Model config",
