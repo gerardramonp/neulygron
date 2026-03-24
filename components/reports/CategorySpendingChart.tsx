@@ -34,11 +34,16 @@ type ChartDatum = CategorySpendingRow & { percent: number };
 type ChartType = "bar" | "pie";
 
 const SLICE_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
+  "var(--category-1)",
+  "var(--category-2)",
+  "var(--category-3)",
+  "var(--category-4)",
+  "var(--category-5)",
+  "var(--category-6)",
+  "var(--category-7)",
+  "var(--category-8)",
+  "var(--category-9)",
+  "var(--category-10)",
 ] as const;
 
 function truncateCategoryLabel(name: string, maxLen: number): string {
