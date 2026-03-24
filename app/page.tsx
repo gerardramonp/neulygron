@@ -22,6 +22,7 @@ import {
   formatYearMonth,
   parseYearMonth,
 } from "@/lib/year-month";
+import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -141,8 +142,6 @@ export default function Home() {
       expenseIndex: number,
       toCategoryName: string,
     ) => {
-      if (fromCategoryName === toCategoryName) return;
-
       const prev = classificationResult;
       const sourceCat = prev?.categories.find(
         (c) => c.name === fromCategoryName,
@@ -152,43 +151,14 @@ export default function Home() {
 
       setClassificationResult((state) => {
         if (!state) return state;
-        const sourceIndex = state.categories.findIndex(
-          (c) => c.name === fromCategoryName,
+        const nextCategories = reassignCategoryExpense(
+          state.categories,
+          fromCategoryName,
+          expenseIndex,
+          toCategoryName,
+          categories,
         );
-        if (sourceIndex < 0) return state;
-        const source = state.categories[sourceIndex];
-        const exp = source.expenses[expenseIndex];
-        if (!exp) return state;
-
-        const nextSourceExpenses = source.expenses.filter(
-          (_, i) => i !== expenseIndex,
-        );
-        const afterRemove = state.categories.map((cat, i) =>
-          i === sourceIndex ? { ...cat, expenses: nextSourceExpenses } : cat,
-        );
-
-        const targetIndex = afterRemove.findIndex(
-          (cat) => cat.name === toCategoryName,
-        );
-        let nextCategories;
-        if (targetIndex >= 0) {
-          nextCategories = afterRemove.map((cat, i) =>
-            i === targetIndex
-              ? { ...cat, expenses: [...cat.expenses, exp] }
-              : cat,
-          );
-        } else {
-          const matched = categories.find((c) => c.name === toCategoryName);
-          if (!matched) return state;
-          nextCategories = [
-            ...afterRemove,
-            {
-              name: toCategoryName,
-              expenses: [exp],
-              position: matched.position,
-            },
-          ];
-        }
+        if (!nextCategories) return state;
         return { ...state, categories: nextCategories };
       });
 

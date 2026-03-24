@@ -26,12 +26,26 @@
   "ReportsPage": {
     "label": "Saved reports",
     "title": "Monthly expense reports",
+    "titleYearly": "Yearly expense report",
     "description": "Pick a year and month to view a report you previously saved.",
+    "descriptionYearly": "Pick a year to see how much you spent in each category every month, and the total per category for the year.",
+    "viewMonthly": "Monthly",
+    "viewYearly": "Yearly",
     "yearLabel": "Year",
     "monthLabel": "Month",
     "emptyState": "No saved report for this month.",
+    "yearlyEmptyState": "No saved reports for this year.",
     "loadError": "Could not load the report. Please try again.",
-    "updatedAt": "Last updated: {date}"
+    "yearlyLoadError": "Could not load the yearly report. Please try again.",
+    "updatedAt": "Last updated: {date}",
+    "savingReportChanges": "Saving changes…",
+    "reportEditSaveError": "Could not save your changes. The report was reloaded.",
+    "tableMonth": "Month",
+    "tableCategory": "Category",
+    "tableMonthTotal": "Month totals",
+    "tableRowTotal": "Row total",
+    "tableYearTotal": "Year total",
+    "tableGrandTotal": "Grand total"
   },
   "ConfigPage": {
     "label": "AI Model config",
