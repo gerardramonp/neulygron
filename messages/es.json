@@ -45,7 +45,15 @@
     "tableMonthTotal": "Totales por mes",
     "tableRowTotal": "Total fila",
     "tableYearTotal": "Total año",
-    "tableGrandTotal": "Total general"
+    "tableGrandTotal": "Total general",
+    "chartTitle": "Gastos por categoría",
+    "chartEmpty": "No hay gastos clasificados para mostrar este mes.",
+    "chartAmount": "Importe",
+    "chartPercent": "Parte del mes",
+    "chartAriaSummary": "{count} categorías con gastos, total del mes {total}",
+    "chartViewGroup": "Tipo de gráfico",
+    "chartViewBar": "Barras",
+    "chartViewPie": "Circular"
   },
   "ClassificationProgress": {
     "notice": "Puede tardar hasta 2–3 minutos. ¡Gracias por tu paciencia!",
