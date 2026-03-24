@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CategorySpendingChart } from "@/components/reports/CategorySpendingChart";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { YearlyReportResponseBody } from "@/lib/yearly-report";
 import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
@@ -308,6 +309,17 @@ export default function ReportsPage() {
     };
   }, [report]);
 
+  const categoryChartRows = useMemo(() => {
+    if (!report) return [];
+    return report.categories
+      .map((cat) => ({
+        name: cat.name,
+        amount: cat.expenses.reduce((s, exp) => s + exp.amount, 0),
+      }))
+      .filter((r) => r.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+  }, [report]);
+
   const updatedAtLabel = useMemo(() => {
     if (!report?.updatedAt) return null;
     try {
@@ -460,6 +472,7 @@ export default function ReportsPage() {
               categories={categories}
               onReassign={handleReassignReportExpense}
             />
+            <CategorySpendingChart rows={categoryChartRows} locale={locale} />
           </div>
         ) : null}
 

@@ -45,7 +45,15 @@
     "tableMonthTotal": "Month totals",
     "tableRowTotal": "Row total",
     "tableYearTotal": "Year total",
-    "tableGrandTotal": "Grand total"
+    "tableGrandTotal": "Grand total",
+    "chartTitle": "Spending by category",
+    "chartEmpty": "No categorized spending to show for this month.",
+    "chartAmount": "Amount",
+    "chartPercent": "Share of month",
+    "chartAriaSummary": "{count} categories with spending, month total {total}",
+    "chartViewGroup": "Chart type",
+    "chartViewBar": "Bars",
+    "chartViewPie": "Pie"
   },
   "ConfigPage": {
     "label": "AI Model config",
