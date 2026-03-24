@@ -97,6 +97,7 @@ export async function POST(request: Request) {
       {
         ...classifiedExpenses,
         categories: categoriesOrdered,
+        proposedYearMonth: extractedExpenses.proposedYearMonth,
       },
       { status: 200 },
     );

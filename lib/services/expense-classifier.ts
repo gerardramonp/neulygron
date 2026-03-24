@@ -26,7 +26,7 @@ export async function extractExpensesFromText(
     model: "openai/gpt-4o-mini",
     temperature: 0,
     output: Output.object({ schema: extractExpensesSchema }),
-    prompt: `You are an expert financial document analyzer. Your task is to extract ALL expenses from the following document.
+    prompt: `You are an expert financial document analyzer. Your task is to extract ALL expenses from the following document and infer which calendar month the document belongs to.
 
 INSTRUCTIONS:
 - Extract EVERY single expense, purchase, payment, charge, fee, or cost mentioned in the document.
@@ -38,11 +38,17 @@ INSTRUCTIONS:
 - Before finishing, count the expenses you extracted and scan the document again to ensure none are missing. The total of all amounts must match the sum of all charges in the document (excluding income/refunds).
 - Each distinct line item or charge should appear only once. Do not duplicate the same expense.
 
+STATEMENT PERIOD (proposedYearMonth):
+- Set proposedYearMonth to a single string in strict form YYYY-MM (e.g. 2025-03).
+- Use headers, footers, "statement period", billing dates, or invoice date. If a range spans months, use the month of the period end (or closing date).
+- If multiple unrelated dates appear and one clear statement month exists, use that month.
+- Set proposedYearMonth to null only when no usable date exists in the text.
+
 EXCLUDE the following (these are NOT expenses):
 - Income, deposits, refunds, or credits received
 - Account balances or totals (unless they represent a specific charge)
-- Dates, reference numbers, or account identifiers
-- Headers, footers, or document metadata
+- Dates, reference numbers, or account identifiers (still use those dates only for proposedYearMonth above, not as expense lines)
+- Headers, footers, or document metadata as expense rows
 
 CRITICAL: Missing even one expense is an error. Be thorough and do not miss any. When in doubt, include it.
 
