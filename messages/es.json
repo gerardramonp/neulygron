@@ -26,12 +26,22 @@
   "ReportsPage": {
     "label": "Informes guardados",
     "title": "Informes de gastos mensuales",
+    "titleYearly": "Informe de gastos anual",
     "description": "Elige año y mes para ver un informe que guardaste antes.",
+    "descriptionYearly": "Elige un año para ver cuánto gastaste en cada categoría cada mes y el total por categoría en el año.",
+    "viewMonthly": "Mensual",
+    "viewYearly": "Anual",
     "yearLabel": "Año",
     "monthLabel": "Mes",
     "emptyState": "No hay informe guardado para este mes.",
+    "yearlyEmptyState": "No hay informes guardados para este año.",
     "loadError": "No se pudo cargar el informe. Intenta de nuevo.",
-    "updatedAt": "Última actualización: {date}"
+    "yearlyLoadError": "No se pudo cargar el informe anual. Intenta de nuevo.",
+    "updatedAt": "Última actualización: {date}",
+    "tableMonth": "Mes",
+    "tableRowTotal": "Total fila",
+    "tableYearTotal": "Total año",
+    "tableGrandTotal": "Total general"
   },
   "ClassificationProgress": {
     "notice": "Puede tardar hasta 2–3 minutos. ¡Gracias por tu paciencia!",
