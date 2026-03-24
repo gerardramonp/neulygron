@@ -4,20 +4,26 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ChangeEvent,
   type DragEvent,
   useRef,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import categoriseMock from "@/mocks/caterogiseMock.json";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { Category } from "@/app/config/types";
+import { buildYearRange, formatYearMonth } from "@/lib/year-month";
 
 export default function Home() {
   const t = useTranslations("HomePage");
+  const locale = useLocale();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -28,7 +34,27 @@ export default function Home() {
   );
   const [isClassifying, setIsClassifying] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [reportYear, setReportYear] = useState(() => new Date().getFullYear());
+  const [reportMonth, setReportMonth] = useState(
+    () => new Date().getMonth() + 1,
+  );
+  const [isSavingReport, setIsSavingReport] = useState(false);
+  const [saveReportError, setSaveReportError] = useState<string | null>(null);
+  const [saveReportSuccess, setSaveReportSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const anchorYear = useMemo(() => new Date().getFullYear(), []);
+  const yearOptions = useMemo(() => buildYearRange(anchorYear), [anchorYear]);
+
+  const monthOptions = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      const label = new Intl.DateTimeFormat(locale, { month: "long" }).format(
+        new Date(2000, month - 1, 1),
+      );
+      return { value: month, label };
+    });
+  }, [locale]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -42,6 +68,10 @@ export default function Home() {
         // Silently ignore — categories will just be empty
       });
   }, []);
+
+  useEffect(() => {
+    setSaveReportSuccess(false);
+  }, [reportYear, reportMonth]);
 
   const handleAssignExpense = useCallback(
     (expenseIndex: number, categoryName: string) => {
@@ -172,6 +202,8 @@ export default function Home() {
   const resetClassificationFeedback = () => {
     setClassificationResult(null);
     setClassificationError(null);
+    setSaveReportError(null);
+    setSaveReportSuccess(false);
   };
 
   const processFile = (file: File | null) => {
@@ -239,26 +271,30 @@ export default function Home() {
     setIsClassifying(true);
     setClassificationResult(null);
     setClassificationError(null);
+    setSaveReportError(null);
+    setSaveReportSuccess(false);
 
     const formData = new FormData();
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch("/api/expenses/classify", {
-        method: "POST",
-        body: formData,
-      });
+      // const response = await fetch("/api/expenses/classify", {
+      //   method: "POST",
+      //   body: formData,
+      // });
 
-      const message = await response.json();
+      // const message = await response.json();
 
-      if (!response.ok) {
-        setClassificationError(message?.message ?? t("errors.uploadFailed"));
-        return;
-      }
+      // if (!response.ok) {
+      //   setClassificationError(message?.message ?? t("errors.uploadFailed"));
+      //   return;
+      // }
 
       const positionByName = new Map(
         categories.map((c) => [c.name, c.position]),
       );
+
+      const message = categoriseMock;
       const sortedResult: ClassifiedExpensesWithPositions = {
         ...message,
         categories: [...(message.categories ?? [])].sort((a, b) => {
@@ -275,6 +311,65 @@ export default function Home() {
       setIsClassifying(false);
     }
   };
+
+  const handleSaveMonthlyReport = async () => {
+    if (
+      !classificationResult ||
+      classificationResult.uncategorized.length > 0
+    ) {
+      return;
+    }
+
+    setIsSavingReport(true);
+    setSaveReportError(null);
+    setSaveReportSuccess(false);
+
+    const yearMonth = formatYearMonth(reportYear, reportMonth);
+    const categoriesPayload = classificationResult.categories
+      .filter((cat) => cat.expenses.length > 0)
+      .map((cat) => ({
+        name: cat.name,
+        position: cat.position,
+        expenses: cat.expenses.map((e) => ({
+          concept: e.concept,
+          amount: e.amount,
+        })),
+      }));
+
+    try {
+      const response = await fetch("/api/expenses/monthly-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yearMonth, categories: categoriesPayload }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        setSaveReportError(t("saveReportUnauthorized"));
+        return;
+      }
+
+      if (!response.ok) {
+        const msg =
+          typeof body?.message === "string"
+            ? body.message
+            : t("saveReportError");
+        setSaveReportError(msg);
+        return;
+      }
+
+      setSaveReportSuccess(true);
+    } catch {
+      setSaveReportError(t("saveReportError"));
+    } finally {
+      setIsSavingReport(false);
+    }
+  };
+
+  const canSaveReport =
+    classificationResult !== null &&
+    classificationResult.uncategorized.length === 0;
 
   return (
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
@@ -355,12 +450,83 @@ export default function Home() {
             ) : null}
 
             {classificationResult ? (
-              <ClassificationResults
-                data={classificationResult}
-                categories={categories}
-                onAssign={handleAssignExpense}
-                onReassign={handleReassignExpense}
-              />
+              <>
+                <ClassificationResults
+                  data={classificationResult}
+                  categories={categories}
+                  onAssign={handleAssignExpense}
+                  onReassign={handleReassignExpense}
+                />
+                {canSaveReport ? (
+                  <section className="space-y-4 rounded-xl border border-border bg-card/40 p-6">
+                    <h2 className="text-lg font-semibold text-foreground">
+                      {t("saveSectionTitle")}
+                    </h2>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                      <div className="space-y-2">
+                        <Label htmlFor="save-report-year">
+                          {t("saveYearLabel")}
+                        </Label>
+                        <NativeSelect
+                          id="save-report-year"
+                          value={reportYear}
+                          onChange={(e) =>
+                            setReportYear(Number(e.target.value))
+                          }
+                          disabled={isSavingReport}
+                        >
+                          {yearOptions.map((y) => (
+                            <option key={y} value={y}>
+                              {y}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="save-report-month">
+                          {t("saveMonthLabel")}
+                        </Label>
+                        <NativeSelect
+                          id="save-report-month"
+                          value={reportMonth}
+                          onChange={(e) =>
+                            setReportMonth(Number(e.target.value))
+                          }
+                          disabled={isSavingReport}
+                        >
+                          {monthOptions.map(({ value, label }) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleSaveMonthlyReport}
+                        disabled={isSavingReport}
+                        aria-busy={isSavingReport}
+                      >
+                        {isSavingReport
+                          ? t("savingReportButton")
+                          : t("saveReportButton")}
+                      </Button>
+                    </div>
+                    {saveReportError ? (
+                      <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        {saveReportError}
+                      </p>
+                    ) : null}
+                    {saveReportSuccess ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t("saveReportSuccess", {
+                          yearMonth: formatYearMonth(reportYear, reportMonth),
+                        })}
+                      </p>
+                    ) : null}
+                  </section>
+                ) : null}
+              </>
             ) : null}
           </div>
         ) : null}

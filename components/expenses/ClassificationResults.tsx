@@ -21,8 +21,9 @@ import type { Category } from "@/app/config/types";
 interface ClassificationResultsProps {
   data: ClassifiedExpensesWithPositions;
   categories: Category[];
-  onAssign: (expenseIndex: number, categoryName: string) => void;
-  onReassign: (
+  readOnly?: boolean;
+  onAssign?: (expenseIndex: number, categoryName: string) => void;
+  onReassign?: (
     fromCategoryName: string,
     expenseIndex: number,
     toCategoryName: string,
@@ -32,8 +33,9 @@ interface ClassificationResultsProps {
 export function ClassificationResults({
   data,
   categories,
-  onAssign,
-  onReassign,
+  readOnly = false,
+  onAssign = () => {},
+  onReassign = () => {},
 }: ClassificationResultsProps) {
   const t = useTranslations("ClassificationResults");
 
@@ -81,7 +83,7 @@ export function ClassificationResults({
     [data.categories],
   );
 
-  const hasUncategorized = data.uncategorized.length > 0;
+  const hasUncategorized = !readOnly && data.uncategorized.length > 0;
 
   return (
     <div className="space-y-6 w-full">
@@ -183,6 +185,7 @@ export function ClassificationResults({
                         count: category.expenses.length,
                       })}
                       categories={categories}
+                      readOnly={readOnly}
                       onReassign={(expenseIndex, targetCategoryName) =>
                         onReassign(
                           category.name,

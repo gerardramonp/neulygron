@@ -11,7 +11,7 @@ const categorySnapshotSchema = z.object({
   expenses: z.array(expenseLineSchema),
 });
 
-const yearMonthRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+export const yearMonthRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export const saveMonthlyExpenseReportSchema = z
   .object({

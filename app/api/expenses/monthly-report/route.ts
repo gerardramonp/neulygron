@@ -5,7 +5,64 @@ import { authOptions } from "@/lib/auth/options";
 import MonthlyExpenseReportModel from "@/lib/models/monthly-expense-report";
 import { connectToDatabase } from "@/lib/mongodb";
 import { logger } from "@/lib/logger";
-import { saveMonthlyExpenseReportSchema } from "@/lib/validation/monthly-expense-report";
+import {
+  saveMonthlyExpenseReportSchema,
+  yearMonthRegex,
+} from "@/lib/validation/monthly-expense-report";
+
+export async function GET(request: Request) {
+  let session: Session | null = null;
+  try {
+    session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const yearMonth = url.searchParams.get("yearMonth")?.trim() ?? "";
+
+    if (!yearMonthRegex.test(yearMonth)) {
+      return NextResponse.json(
+        { message: "yearMonth query must be YYYY-MM" },
+        { status: 400 },
+      );
+    }
+
+    await connectToDatabase();
+
+    const report = await MonthlyExpenseReportModel.findOne({
+      userId: session.user.id,
+      yearMonth,
+    }).lean();
+
+    if (!report) {
+      return NextResponse.json({ message: "Report not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      {
+        report: {
+          id: report._id.toString(),
+          yearMonth: report.yearMonth,
+          categories: report.categories,
+          updatedAt: report.updatedAt?.toISOString() ?? null,
+        },
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    logger.error("Failed to load monthly expense report", error, {
+      route: "/api/expenses/monthly-report",
+      method: "GET",
+      userId: session?.user?.id,
+    });
+    return NextResponse.json(
+      { message: "Something went wrong" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   let session: Session | null = null;
