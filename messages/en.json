@@ -38,7 +38,11 @@
     "loadError": "Could not load the report. Please try again.",
     "yearlyLoadError": "Could not load the yearly report. Please try again.",
     "updatedAt": "Last updated: {date}",
+    "savingReportChanges": "Saving changes…",
+    "reportEditSaveError": "Could not save your changes. The report was reloaded.",
     "tableMonth": "Month",
+    "tableCategory": "Category",
+    "tableMonthTotal": "Month totals",
     "tableRowTotal": "Row total",
     "tableYearTotal": "Year total",
     "tableGrandTotal": "Grand total"

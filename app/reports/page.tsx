@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
+import type { Category } from "@/app/config/types";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { YearlyReportResponseBody } from "@/lib/yearly-report";
+import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
 import { buildYearRange, formatYearMonth, parseYearMonth } from "@/lib/year-month";
 import { cn, formatAmount } from "@/lib/utils";
 
@@ -50,6 +51,13 @@ export default function ReportsPage() {
   const [isLoadingYearly, setIsLoadingYearly] = useState(false);
   const [loadErrorYearly, setLoadErrorYearly] = useState<string | null>(null);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isSavingReportEdit, setIsSavingReportEdit] = useState(false);
+  const [reportEditSaveError, setReportEditSaveError] = useState<string | null>(
+    null,
+  );
+  const reportRef = useRef<LoadedReport | null>(null);
+
   const anchorYear = useMemo(() => new Date().getFullYear(), []);
   const yearOptions = useMemo(
     () => buildYearRange(anchorYear),
@@ -75,6 +83,25 @@ export default function ReportsPage() {
     }
     return map;
   }, [locale, reportYear]);
+
+  useEffect(() => {
+    reportRef.current = report;
+  }, [report]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.categories) {
+          setCategories(data.categories);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setReportEditSaveError(null);
+  }, [reportYear, reportMonth]);
 
   const fetchReport = useCallback(async () => {
     const yearMonth = formatYearMonth(reportYear, reportMonth);
@@ -124,6 +151,99 @@ export default function ReportsPage() {
       setIsLoadingMonthly(false);
     }
   }, [reportYear, reportMonth, t]);
+
+  const handleReassignReportExpense = useCallback(
+    async (
+      fromCategoryName: string,
+      expenseIndex: number,
+      toCategoryName: string,
+    ) => {
+      const prev = reportRef.current;
+      if (!prev) return;
+
+      const sourceCat = prev.categories.find(
+        (c) => c.name === fromCategoryName,
+      );
+      const expense = sourceCat?.expenses[expenseIndex];
+      const targetCategory = categories.find((c) => c.name === toCategoryName);
+
+      const nextCategories = reassignCategoryExpense(
+        prev.categories,
+        fromCategoryName,
+        expenseIndex,
+        toCategoryName,
+        categories,
+      );
+      if (!nextCategories) return;
+
+      setReport({ ...prev, categories: nextCategories });
+      reportRef.current = { ...prev, categories: nextCategories };
+
+      if (expense?.concept?.trim() && targetCategory?.id) {
+        fetch(`/api/categories/${targetCategory.id}/concepts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ concept: expense.concept.trim() }),
+        }).catch(() => {});
+      }
+
+      setReportEditSaveError(null);
+      setIsSavingReportEdit(true);
+      try {
+        const categoriesPayload = nextCategories
+          .filter((cat) => cat.expenses.length > 0)
+          .map((cat) => ({
+            name: cat.name,
+            position: cat.position,
+            expenses: cat.expenses.map((e) => ({
+              concept: e.concept,
+              amount: e.amount,
+            })),
+          }));
+
+        const response = await fetch("/api/expenses/monthly-report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            yearMonth: prev.yearMonth,
+            categories: categoriesPayload,
+          }),
+        });
+
+        const body = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setReportEditSaveError(t("reportEditSaveError"));
+          await fetchReport();
+          return;
+        }
+
+        const r = body?.report;
+        if (
+          r &&
+          (typeof r.updatedAt === "string" || r.updatedAt === null)
+        ) {
+          setReport((current) =>
+            current &&
+            current.yearMonth === prev.yearMonth &&
+            current.id === prev.id
+              ? {
+                  ...current,
+                  updatedAt:
+                    typeof r.updatedAt === "string" ? r.updatedAt : null,
+                }
+              : current,
+          );
+        }
+      } catch {
+        setReportEditSaveError(t("reportEditSaveError"));
+        await fetchReport();
+      } finally {
+        setIsSavingReportEdit(false);
+      }
+    },
+    [categories, fetchReport, t],
+  );
 
   const fetchYearlyReport = useCallback(async () => {
     setIsLoadingYearly(true);
@@ -322,15 +442,23 @@ export default function ReportsPage() {
 
         {reportView === "monthly" && viewData && !notFound ? (
           <div className="space-y-4">
-            {updatedAtLabel ? (
-              <p className="text-sm text-muted-foreground">
-                {t("updatedAt", { date: updatedAtLabel })}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {updatedAtLabel ? (
+                <p>{t("updatedAt", { date: updatedAtLabel })}</p>
+              ) : null}
+              {isSavingReportEdit ? (
+                <p aria-live="polite">{t("savingReportChanges")}</p>
+              ) : null}
+            </div>
+            {reportEditSaveError ? (
+              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {reportEditSaveError}
               </p>
             ) : null}
             <ClassificationResults
-              readOnly
               data={viewData}
-              categories={[]}
+              categories={categories}
+              onReassign={handleReassignReportExpense}
             />
           </div>
         ) : null}
@@ -340,73 +468,70 @@ export default function ReportsPage() {
         yearlyReport.categories.length > 0 ? (
           <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-border">
             <Table className="min-w-max">
-              <TableCaption className="mt-0 mb-2 text-left text-sm text-muted-foreground">
-                {t("tableGrandTotal")}: {formatAmount(yearlyReport.grandTotal)}
-              </TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 z-10 min-w-[8rem] bg-card">
-                    {t("tableMonth")}
+                    {t("tableCategory")}
                   </TableHead>
-                  {yearlyReport.categories.map((c) => (
-                    <TableHead
-                      key={c.name}
-                      className="min-w-[6rem] text-right whitespace-normal"
-                    >
-                      {c.name}
-                    </TableHead>
-                  ))}
+                  {yearlyReport.months.map((row) => {
+                    const parsed = parseYearMonth(row.yearMonth);
+                    const monthLabel =
+                      monthLabelByYearMonth.get(row.yearMonth) ??
+                      (parsed
+                        ? new Intl.DateTimeFormat(locale, {
+                            month: "long",
+                          }).format(new Date(2000, parsed.month - 1, 1))
+                        : row.yearMonth);
+                    return (
+                      <TableHead
+                        key={row.yearMonth}
+                        className="min-w-[5.5rem] text-right whitespace-normal"
+                      >
+                        {monthLabel}
+                      </TableHead>
+                    );
+                  })}
                   <TableHead className="min-w-[6rem] text-right font-semibold">
-                    {t("tableRowTotal")}
+                    {t("tableYearTotal")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {yearlyReport.months.map((row) => {
-                  const parsed = parseYearMonth(row.yearMonth);
-                  const monthLabel =
-                    monthLabelByYearMonth.get(row.yearMonth) ??
-                    (parsed
-                      ? new Intl.DateTimeFormat(locale, {
-                          month: "long",
-                        }).format(new Date(2000, parsed.month - 1, 1))
-                      : row.yearMonth);
-                  return (
-                    <TableRow key={row.yearMonth}>
-                      <TableCell className="sticky left-0 z-10 bg-card font-medium">
-                        {monthLabel}
-                      </TableCell>
-                      {yearlyReport.categories.map((c) => {
-                        const v = row.totals[c.name] ?? 0;
-                        return (
-                          <TableCell key={c.name} className="text-right tabular-nums">
-                            {formatAmount(v)}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell className="text-right tabular-nums font-medium">
-                        {formatAmount(row.rowTotal)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {yearlyReport.categories.map((c) => (
+                  <TableRow key={c.name}>
+                    <TableCell className="sticky left-0 z-10 bg-card font-medium whitespace-normal">
+                      {c.name}
+                    </TableCell>
+                    {yearlyReport.months.map((row) => {
+                      const v = row.totals[c.name] ?? 0;
+                      return (
+                        <TableCell
+                          key={row.yearMonth}
+                          className="text-right tabular-nums"
+                        >
+                          {formatAmount(v)}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className="text-right tabular-nums font-medium">
+                      {formatAmount(yearlyReport.yearTotals[c.name] ?? 0)}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
               <TableFooter>
                 <TableRow>
                   <TableCell className="sticky left-0 z-10 bg-muted/50 font-semibold">
-                    {t("tableYearTotal")}
+                    {t("tableMonthTotal")}
                   </TableCell>
-                  {yearlyReport.categories.map((c) => {
-                    const v = yearlyReport.yearTotals[c.name] ?? 0;
-                    return (
-                      <TableCell
-                        key={c.name}
-                        className="text-right tabular-nums font-semibold"
-                      >
-                        {formatAmount(v)}
-                      </TableCell>
-                    );
-                  })}
+                  {yearlyReport.months.map((row) => (
+                    <TableCell
+                      key={row.yearMonth}
+                      className="text-right tabular-nums font-semibold"
+                    >
+                      {formatAmount(row.rowTotal)}
+                    </TableCell>
+                  ))}
                   <TableCell className="text-right tabular-nums font-bold">
                     {formatAmount(yearlyReport.grandTotal)}
                   </TableCell>

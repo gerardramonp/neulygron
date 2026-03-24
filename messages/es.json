@@ -38,7 +38,11 @@
     "loadError": "No se pudo cargar el informe. Intenta de nuevo.",
     "yearlyLoadError": "No se pudo cargar el informe anual. Intenta de nuevo.",
     "updatedAt": "Última actualización: {date}",
+    "savingReportChanges": "Guardando cambios…",
+    "reportEditSaveError": "No se pudieron guardar los cambios. Se volvió a cargar el informe.",
     "tableMonth": "Mes",
+    "tableCategory": "Categoría",
+    "tableMonthTotal": "Totales por mes",
     "tableRowTotal": "Total fila",
     "tableYearTotal": "Total año",
     "tableGrandTotal": "Total general"
