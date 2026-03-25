@@ -33,6 +33,8 @@
     "viewYearly": "Anual",
     "yearLabel": "Año",
     "monthLabel": "Mes",
+    "previousMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
     "emptyState": "No hay informe guardado para este mes.",
     "yearlyEmptyState": "No hay informes guardados para este año.",
     "loadError": "No se pudo cargar el informe. Intenta de nuevo.",
