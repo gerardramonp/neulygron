@@ -33,6 +33,8 @@
     "viewYearly": "Yearly",
     "yearLabel": "Year",
     "monthLabel": "Month",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
     "emptyState": "No saved report for this month.",
     "yearlyEmptyState": "No saved reports for this year.",
     "loadError": "Could not load the report. Please try again.",

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import type { Category } from "@/app/config/types";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -22,6 +23,7 @@ import type { YearlyReportResponseBody } from "@/lib/yearly-report";
 import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
 import { buildYearRange, formatYearMonth, parseYearMonth } from "@/lib/year-month";
 import { cn, formatAmount } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type LoadedReport = {
   id: string;
@@ -60,10 +62,11 @@ export default function ReportsPage() {
   const reportRef = useRef<LoadedReport | null>(null);
 
   const anchorYear = useMemo(() => new Date().getFullYear(), []);
-  const yearOptions = useMemo(
-    () => buildYearRange(anchorYear),
-    [anchorYear],
-  );
+  const yearOptions = useMemo(() => {
+    const base = buildYearRange(anchorYear);
+    if (base.includes(reportYear)) return base;
+    return [...base, reportYear].sort((a, b) => a - b);
+  }, [anchorYear, reportYear]);
 
   const monthOptions = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
@@ -103,6 +106,23 @@ export default function ReportsPage() {
   useEffect(() => {
     setReportEditSaveError(null);
   }, [reportYear, reportMonth]);
+
+  const goToAdjacentMonth = useCallback(
+    (delta: -1 | 1) => {
+      let month = reportMonth + delta;
+      let year = reportYear;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      } else if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+      setReportYear(year);
+      setReportMonth(month);
+    },
+    [reportMonth, reportYear],
+  );
 
   const fetchReport = useCallback(async () => {
     const yearMonth = formatYearMonth(reportYear, reportMonth);
@@ -414,21 +434,47 @@ export default function ReportsPage() {
               </NativeSelect>
             </div>
             {reportView === "monthly" ? (
-              <div className="space-y-2">
-                <Label htmlFor="reports-month">{t("monthLabel")}</Label>
-                <NativeSelect
-                  id="reports-month"
-                  value={reportMonth}
-                  onChange={(e) => setReportMonth(Number(e.target.value))}
-                  disabled={isLoadingMonthly}
-                >
-                  {monthOptions.map(({ value, label }) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="reports-month">{t("monthLabel")}</Label>
+                  <NativeSelect
+                    id="reports-month"
+                    value={reportMonth}
+                    onChange={(e) => setReportMonth(Number(e.target.value))}
+                    disabled={isLoadingMonthly}
+                  >
+                    {monthOptions.map(({ value, label }) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => goToAdjacentMonth(-1)}
+                    disabled={isLoadingMonthly}
+                    aria-label={t("previousMonth")}
+                  >
+                    <ChevronLeft className="size-4" aria-hidden />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => goToAdjacentMonth(1)}
+                    disabled={isLoadingMonthly}
+                    aria-label={t("nextMonth")}
+                  >
+                    <ChevronRight className="size-4" aria-hidden />
+                  </Button>
+                </div>
+              </>
             ) : null}
           </div>
 
