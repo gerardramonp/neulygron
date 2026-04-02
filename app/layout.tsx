@@ -30,7 +30,7 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const theme =
-    (cookieStore.get(THEME_COOKIE)?.value as Theme | undefined) ?? "system";
+    (cookieStore.get(THEME_COOKIE)?.value as Theme | undefined) ?? "light";
   const htmlClass = theme === "dark" ? "dark" : "";
   return (
     <html lang="en" className={htmlClass}>
