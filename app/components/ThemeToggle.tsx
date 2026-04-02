@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
+import clsx from "clsx";
 import { THEME_COOKIE, type Theme } from "@/lib/theme/config";
 
 function readCookie(name: string): string | null {
@@ -10,57 +12,41 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof document === "undefined") return "system";
+    if (typeof document === "undefined") return "light";
     const v = readCookie(THEME_COOKIE) as Theme | null;
-    return v ?? "system";
+    return v === "dark" ? "dark" : "light";
   });
 
   useEffect(() => {
     const html = document.documentElement;
-    const isDark = theme === "dark";
-    html.classList.toggle("dark", isDark);
+    html.classList.toggle("dark", theme === "dark");
 
     const oneYear = 60 * 60 * 24 * 365;
     document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=${oneYear}`;
   }, [theme]);
 
-  function set(next: Theme) {
-    setTheme(next);
+  function toggle() {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   }
 
-  const btnBase =
-    "rounded-full px-2 py-1 transition-colors hover:bg-muted hover:ring-1 hover:ring-ring ";
-  const selectedThemeClass = "font-semibold ring-1 ring-ring";
+  const isDark = theme === "dark";
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border px-2 py-1 text-sm bg-background text-foreground backdrop-blur">
-      <span className="opacity-70">Theme:</span>
-      <button
-        type="button"
-        onClick={() => set("light")}
-        aria-pressed={theme === "light"}
-        className={`${btnBase} ${theme === "light" ? selectedThemeClass : ""}`}
-      >
-        Light
-      </button>
-      <button
-        type="button"
-        onClick={() => set("dark")}
-        aria-pressed={theme === "dark"}
-        className={`${btnBase} ${theme === "dark" ? selectedThemeClass : ""}`}
-      >
-        Dark
-      </button>
-      <button
-        type="button"
-        onClick={() => set("system")}
-        aria-pressed={theme === "system"}
-        className={`${btnBase} ${theme === "system" ? selectedThemeClass : ""}`}
-      >
-        System
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      className={clsx(
+        "text-xs flex flex-col items-center gap-0.5 transition-colors",
+        className,
+      )}
+    >
+      <span className="rounded-lg border border-current/20 p-2 hover:border-current/50">
+        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </span>
+      <span>{isDark ? "Light" : "Dark"}</span>
+    </button>
   );
 }

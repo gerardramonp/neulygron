@@ -12,6 +12,7 @@ import {
   LogOut,
   CalendarDays,
 } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 const BASE_NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -67,18 +68,21 @@ export default function AppNavigation() {
             );
           })}
         </div>
-        {isAuthenticated && (
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="mt-auto text-xs flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <span className="rounded-lg border border-border bg-sidebar text-sidebar-foreground p-2">
-              <LogOut className="w-5 h-5" />
-            </span>
-            <span>Sign out</span>
-          </button>
-        )}
+        <div className="mt-auto flex flex-col items-center gap-4">
+          <ThemeToggle className="text-sidebar-desktop-foreground/70 hover:text-sidebar-desktop-foreground" />
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="text-xs flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <span className="rounded-lg border border-border bg-sidebar text-sidebar-foreground p-2">
+                <LogOut className="w-5 h-5" />
+              </span>
+              <span>Sign out</span>
+            </button>
+          )}
+        </div>
       </aside>
 
       <nav className="md:hidden fixed inset-x-0 bottom-4 z-40 flex justify-center">
@@ -105,6 +109,7 @@ export default function AppNavigation() {
               </Link>
             );
           })}
+          <ThemeToggle className="rounded-full px-4 py-1 text-muted-foreground hover:text-foreground" />
           {isAuthenticated && (
             <button
               type="button"
