@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, GripVertical, Loader2, Trash2 } from "lucide-react";
+import { GripVertical, Loader2, Trash2 } from "lucide-react";
 
 import type { Category } from "./types";
+
+const AUTOSAVE_DEBOUNCE_MS = 550;
 
 type CategoryCardProps = {
   category: Category;
   onFieldChange: (field: "name" | "description", value: string) => void;
+  onRevertFields: (name: string, description: string) => void;
   onDelete: () => void;
   onError: (message: string | null) => void;
 };
@@ -21,13 +24,27 @@ type CategoryCardProps = {
 export default function CategoryCard({
   category,
   onFieldChange,
+  onRevertFields,
   onDelete,
   onError,
 }: CategoryCardProps) {
   const [isEditingName, setIsEditingName] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const isBusy = isSaving || isDeleting;
+
+  const categoryRef = useRef(category);
+  categoryRef.current = category;
+
+  const lastPersistedRef = useRef({
+    name: category.name,
+    description: category.description,
+  });
+
+  const onFieldChangeRef = useRef(onFieldChange);
+  const onRevertFieldsRef = useRef(onRevertFields);
+  const onErrorRef = useRef(onError);
+  onFieldChangeRef.current = onFieldChange;
+  onRevertFieldsRef.current = onRevertFields;
+  onErrorRef.current = onError;
 
   const {
     attributes,
@@ -52,7 +69,7 @@ export default function CategoryCard({
   };
 
   const handleDeleteClick = () => {
-    if (isBusy) {
+    if (isDeleting) {
       return;
     }
 
@@ -60,63 +77,111 @@ export default function CategoryCard({
     void deleteCategory();
   };
 
-  const handleSaveClick = () => {
-    if (isBusy) {
-      return;
-    }
-
-    setIsEditingName(false);
-    void saveCategory();
-  };
-
-  const saveCategory = async () => {
+  useEffect(() => {
     if (!category.id) {
-      onError?.("Missing category identifier.");
       return;
     }
 
-    setIsSaving(true);
-    onError(null);
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const last = lastPersistedRef.current;
+        const cur = categoryRef.current;
 
-    try {
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: category.name,
-          description: category.description,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as {
-        category?: Category;
-        message?: string;
-      } | null;
-
-      if (!response.ok) {
-        const message = payload?.message ?? "Unable to update category.";
-        console.error(message);
-        onError?.(message);
-        return;
-      }
-
-      if (payload?.category) {
-        if (typeof payload.category.name === "string") {
-          onFieldChange("name", payload.category.name);
+        if (
+          cur.name === last.name &&
+          cur.description === last.description
+        ) {
+          return;
         }
-        if (typeof payload.category.description === "string") {
-          onFieldChange("description", payload.category.description);
+
+        const beforeAttempt = { ...last };
+        const sent = { name: cur.name, description: cur.description };
+
+        onErrorRef.current(null);
+
+        try {
+          const response = await fetch(`/api/categories/${cur.id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: sent.name,
+              description: sent.description,
+            }),
+          });
+
+          const payload = (await response.json().catch(() => null)) as {
+            category?: Category;
+            message?: string;
+          } | null;
+
+          if (!response.ok) {
+            const message = payload?.message ?? "Unable to update category.";
+            console.error(message);
+            onErrorRef.current(message);
+            const latest = categoryRef.current;
+            if (
+              latest.name === sent.name &&
+              latest.description === sent.description
+            ) {
+              onRevertFieldsRef.current(
+                beforeAttempt.name,
+                beforeAttempt.description,
+              );
+            }
+            return;
+          }
+
+          const resolvedName = payload?.category?.name ?? sent.name;
+          const resolvedDesc = payload?.category?.description ?? sent.description;
+          lastPersistedRef.current = {
+            name: resolvedName,
+            description: resolvedDesc,
+          };
+
+          const latest = categoryRef.current;
+          if (
+            latest.name === sent.name &&
+            latest.description === sent.description
+          ) {
+            if (
+              typeof payload?.category?.name === "string" &&
+              payload.category.name !== latest.name
+            ) {
+              onFieldChangeRef.current("name", payload.category.name);
+            }
+            if (
+              typeof payload?.category?.description === "string" &&
+              payload.category.description !== latest.description
+            ) {
+              onFieldChangeRef.current(
+                "description",
+                payload.category.description,
+              );
+            }
+          }
+        } catch (error) {
+          console.error("Failed to update category", error);
+          onErrorRef.current("Unable to update category. Please try again.");
+          const latest = categoryRef.current;
+          if (
+            latest.name === sent.name &&
+            latest.description === sent.description
+          ) {
+            onRevertFieldsRef.current(
+              beforeAttempt.name,
+              beforeAttempt.description,
+            );
+          }
         }
-      }
-    } catch (error) {
-      console.error("Failed to update category", error);
-      onError?.("Unable to update category. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      })();
+    }, AUTOSAVE_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [category.name, category.description, category.id]);
 
   const deleteCategory = async () => {
     if (!category.id) {
@@ -214,7 +279,7 @@ export default function CategoryCard({
             size="icon"
             className="text-destructive hover:text-destructive"
             onClick={handleDeleteClick}
-            disabled={isBusy}
+            disabled={isDeleting}
           >
             {isDeleting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -222,19 +287,6 @@ export default function CategoryCard({
               <Trash2 className="h-4 w-4" aria-hidden />
             )}
             <span className="sr-only">Delete {category.name}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSaveClick}
-            disabled={isBusy}
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <Check className="h-4 w-4" aria-hidden />
-            )}
-            <span className="sr-only">Save {category.name}</span>
           </Button>
         </div>
       </div>

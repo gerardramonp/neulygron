@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { TooltipContentProps } from "recharts";
+import type { PieLabelRenderProps, TooltipContentProps } from "recharts";
 
 import { cn } from "@/lib/utils";
 
@@ -45,6 +45,60 @@ const SLICE_COLORS = [
   "var(--category-9)",
   "var(--category-10)",
 ] as const;
+
+/** Pie uses a separate palette so adjacent slices stay visually distinct (see globals.css). */
+const PIE_SLICE_FILLS = [
+  "var(--pie-slice-1)",
+  "var(--pie-slice-2)",
+  "var(--pie-slice-3)",
+  "var(--pie-slice-4)",
+  "var(--pie-slice-5)",
+  "var(--pie-slice-6)",
+  "var(--pie-slice-7)",
+  "var(--pie-slice-8)",
+  "var(--pie-slice-9)",
+  "var(--pie-slice-10)",
+] as const;
+
+const PIE_LABEL_MIN_PERCENT = 0.036;
+
+function PieSlicePercentLabel(props: PieLabelRenderProps) {
+  const pct = props.percent ?? 0;
+  if (pct < PIE_LABEL_MIN_PERCENT) return null;
+
+  const cx = props.cx ?? 0;
+  const cy = props.cy ?? 0;
+  const innerR = Number(props.innerRadius ?? 0);
+  const outerR = Number(props.outerRadius ?? 0);
+  const midAngle =
+    props.midAngle ??
+    (Number(props.startAngle ?? 0) + Number(props.endAngle ?? 0)) / 2;
+
+  const r = innerR + (outerR - innerR) * 0.52;
+  const rad = (Math.PI / 180) * midAngle;
+  const x = cx + Math.cos(-rad) * r;
+  const y = cy + Math.sin(-rad) * r;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fill="white"
+      style={{
+        fontSize: 12,
+        fontWeight: 700,
+        paintOrder: "stroke fill",
+        stroke: "rgba(0,0,0,0.32)",
+        strokeWidth: 2.5,
+        strokeLinejoin: "round",
+      }}
+    >
+      {`${Math.round(pct * 100)}%`}
+    </text>
+  );
+}
 
 function truncateCategoryLabel(name: string, maxLen: number): string {
   if (name.length <= maxLen) return name;
@@ -178,7 +232,7 @@ export function CategorySpendingChart({
       <div
         className="w-full min-w-0"
         style={{
-          height: chartType === "bar" ? barChartHeight : 380,
+          height: chartType === "bar" ? barChartHeight : 400,
         }}
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -212,7 +266,10 @@ export function CategorySpendingChart({
                 tickLine={false}
                 axisLine={{ stroke: "var(--border)" }}
               />
-              <Tooltip content={tooltipContent} cursor={{ fill: "var(--muted)" }} />
+              <Tooltip
+                content={tooltipContent}
+                cursor={{ fill: "var(--muted)" }}
+              />
               <Bar
                 dataKey="amount"
                 name={t("chartAmount")}
@@ -228,33 +285,38 @@ export function CategorySpendingChart({
               </Bar>
             </BarChart>
           ) : (
-            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <PieChart margin={{ top: 12, right: 12, bottom: 4, left: 12 }}>
               <Pie
                 data={chartData}
                 dataKey="amount"
                 nameKey="name"
                 cx="50%"
-                cy="46%"
-                outerRadius="72%"
-                paddingAngle={2}
+                cy="48%"
+                outerRadius="68%"
+                paddingAngle={0}
+                stroke="var(--card)"
+                strokeWidth={1.5}
+                label={PieSlicePercentLabel}
+                labelLine={false}
+                animationBegin={50}
+                animationDuration={750}
               >
                 {chartData.map((_, index) => (
                   <Cell
                     key={`slice-${index}`}
-                    fill={SLICE_COLORS[index % SLICE_COLORS.length]}
-                    stroke="var(--card)"
-                    strokeWidth={2}
+                    fill={PIE_SLICE_FILLS[index % PIE_SLICE_FILLS.length]}
                   />
                 ))}
               </Pie>
               <Tooltip content={tooltipContent} />
               <Legend
                 verticalAlign="bottom"
-                wrapperStyle={{ paddingTop: 8 }}
-                formatter={(value) =>
-                  truncateCategoryLabel(String(value), 28)
-                }
-                className="text-xs [&_text]:fill-foreground"
+                align="center"
+                iconType="circle"
+                iconSize={10}
+                wrapperStyle={{ paddingTop: 18, width: "100%" }}
+                formatter={(value) => truncateCategoryLabel(String(value), 28)}
+                className="text-xs [&_.recharts-legend-item]:mr-3 [&_.recharts-legend-item]:inline-flex [&_.recharts-legend-item]:items-center [&_text]:fill-foreground"
               />
             </PieChart>
           )}
