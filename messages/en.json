@@ -20,7 +20,8 @@
     "saveReportUnauthorized": "You must be signed in to save a report.",
     "errors": {
       "invalidType": "Please upload a PDF file.",
-      "uploadFailed": "We couldn't classify your file. Please try again."
+      "uploadFailed": "We couldn't classify your file. Please try again.",
+      "notBankExpenseReport": "This file does not look like a bank statement or card statement. Export a PDF from your bank that lists your transactions, then try again."
     }
   },
   "ReportsPage": {
