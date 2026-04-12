@@ -93,8 +93,12 @@ async function runExtractionConsistencyTest(): Promise<void> {
         console.log("✗ No result");
         process.exit(1);
       }
-      results.push(result);
-      console.log(`✓ Found ${result.expenses.length} expenses`);
+      if (!result.ok) {
+        console.log(`✗ Rejected as non-bank document: ${result.reason}`);
+        process.exit(1);
+      }
+      results.push(result.data);
+      console.log(`✓ Found ${result.data.expenses.length} expenses`);
     } catch (error) {
       console.log(`✗ Failed: ${error}`);
       process.exit(1);

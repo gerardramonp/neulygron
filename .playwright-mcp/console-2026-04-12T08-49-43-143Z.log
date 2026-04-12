@@ -1,0 +1,22 @@
+[     108ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[     123ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   45042ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   45048ms] [LOG] [Fast Refresh] done in 108ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   70472ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   70531ms] [LOG] [Fast Refresh] done in 41ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   71240ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   71279ms] [LOG] [Fast Refresh] done in 23ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   71736ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   71766ms] [LOG] [Fast Refresh] done in 20ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   72255ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   72302ms] [LOG] [Fast Refresh] done in 19ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   73446ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   73501ms] [LOG] [Fast Refresh] done in 23ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   74990ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   75044ms] [LOG] [Fast Refresh] done in 18ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   77055ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   77102ms] [LOG] [Fast Refresh] done in 21ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   77691ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[   77741ms] [LOG] [Fast Refresh] done in 15ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[  238213ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088
+[  238222ms] [LOG] [Fast Refresh] done in 110ms @ http://localhost:3000/_next/static/chunks/node_modules_%40sentry_core_build_esm_d29db0d6._.js:10088

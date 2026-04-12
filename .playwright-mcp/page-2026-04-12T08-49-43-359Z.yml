@@ -1,0 +1,36 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - link "Home" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - generic [ref=e10]: Home
+        - link "Config" [ref=e11] [cursor=pointer]:
+          - /url: /config
+          - img [ref=e13]
+          - generic [ref=e16]: Config
+        - link "Reports" [ref=e17] [cursor=pointer]:
+          - /url: /reports
+          - img [ref=e19]
+          - generic [ref=e21]: Reports
+      - button "Sign out" [ref=e22]:
+        - img [ref=e24]
+        - generic [ref=e27]: Sign out
+    - main [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - paragraph [ref=e32]: Expense classifier
+          - heading "Classify your expenses" [level=1] [ref=e33]
+          - paragraph [ref=e34]: Upload the PDF exported from your bank so the AI model can map each transaction to a category.
+        - generic [ref=e35]:
+          - generic [ref=e36] [cursor=pointer]:
+            - generic [ref=e37]:
+              - paragraph [ref=e38]: Upload expenses PDF
+              - paragraph [ref=e39]: Drag a PDF here or click to pick it from your computer.
+            - generic [ref=e40]: Choose PDF
+            - button "Upload expenses PDF Drag a PDF here or click to pick it from your computer. Choose PDF" [ref=e41]
+          - paragraph [ref=e42]: Only PDF files up to 10MB are supported right now.
+  - button "Open Next.js Dev Tools" [ref=e48] [cursor=pointer]:
+    - img [ref=e49]
+  - alert [ref=e52]

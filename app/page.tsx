@@ -260,12 +260,17 @@ export default function Home() {
       });
 
       const message = (await response.json()) as Record<string, unknown> & {
+        code?: string;
         categories?: ClassifiedExpensesWithPositions["categories"];
         uncategorized?: ClassifiedExpensesWithPositions["uncategorized"];
         proposedYearMonth?: string | null;
       };
 
       if (!response.ok) {
+        if (message.code === "NOT_BANK_EXPENSE_REPORT") {
+          setClassificationError(t("errors.notBankExpenseReport"));
+          return;
+        }
         setClassificationError(
           typeof message?.message === "string"
             ? message.message

@@ -2,9 +2,10 @@ import { generateText, Output } from "ai";
 
 import {
   classifyExpensesSchema,
-  extractExpensesSchema,
+  extractExpensesResultSchema,
   type ClassifiedExpenses,
   type ExtractedExpenses,
+  type ExtractExpensesFromTextResult,
 } from "@/lib/validation/expenses";
 
 /** Number of expenses per classification batch. Smaller = faster per call, more parallel calls. */
@@ -21,42 +22,80 @@ export interface CategoryData {
 
 export async function extractExpensesFromText(
   text: string,
-): Promise<ExtractedExpenses | null> {
+): Promise<ExtractExpensesFromTextResult | null> {
   const { output } = await generateText({
     model: "openai/gpt-4o-mini",
     temperature: 0,
-    output: Output.object({ schema: extractExpensesSchema }),
-    prompt: `You are an expert financial document analyzer. Your task is to extract ALL expenses from the following document and infer which calendar month the document belongs to.
+    output: Output.object({ schema: extractExpensesResultSchema }),
+    prompt: `You are an expert financial document analyzer for NeuLygron. Users upload PDFs that are meant to be bank-issued documents listing spending (debits/charges) so expenses can be extracted.
 
-INSTRUCTIONS:
-- Extract EVERY single expense, purchase, payment, charge, fee, or cost mentioned in the document.
-- Look for expenses in tables, lists, line items, summaries, and any other format.
-- Include recurring charges, one-time payments, subscriptions, taxes, tips, and fees.
-- For each expense, extract the concept (what it was for) and the exact amount.
-- Use the original amount as shown in the document (do not convert currencies).
-- If an item has multiple components (e.g., base price + tax), extract them as separate expenses.
-- Before finishing, count the expenses you extracted and scan the document again to ensure none are missing. The total of all amounts must match the sum of all charges in the document (excluding income/refunds).
-- Each distinct line item or charge should appear only once. Do not duplicate the same expense.
+STEP 1 - DOCUMENT TYPE (mandatory):
+Decide whether the text is from a BANK OR CARD-ISSUER EXPENSE DOCUMENT suitable for this app.
 
-STATEMENT PERIOD (proposedYearMonth):
-- Set proposedYearMonth to a single string in strict form YYYY-MM (e.g. 2025-03).
-- Use headers, footers, "statement period", billing dates, or invoice date. If a range spans months, use the month of the period end (or closing date).
-- If multiple unrelated dates appear and one clear statement month exists, use that month.
-- Set proposedYearMonth to null only when no usable date exists in the text.
+Set result to "ok" ONLY when the document clearly is one of:
+- A bank account statement (checking/savings) showing posted transactions or movements
+- A credit or debit card statement from a bank or payment network showing card charges
+- Another formal account activity listing from a financial institution that itemizes debits/charges in a statement-like way
 
-EXCLUDE the following (these are NOT expenses):
-- Income, deposits, refunds, or credits received
-- Account balances or totals (unless they represent a specific charge)
-- Dates, reference numbers, or account identifiers (still use those dates only for proposedYearMonth above, not as expense lines)
-- Headers, footers, or document metadata as expense rows
+Set result to "not_bank_expense_report" when the PDF is anything else, including but not limited to:
+- Merchant invoices, receipts, delivery notes, or order confirmations (not issued as a bank statement)
+- Payrolls, contracts, tax forms, letters, brochures, manuals, books, slides, or random text
+- Brokerage-only statements with no bank-style transaction grid for card/account spending
+- Blank, illegible, or unrelated content
 
-CRITICAL: Missing even one expense is an error. Be thorough and do not miss any. When in doubt, include it.
+When result is "not_bank_expense_report", set reason to one short clear sentence for the user (e.g. "This looks like an invoice, not a bank statement."). Do not use result "ok" for non-bank documents.
+
+OUTPUT SHAPE (always return all four fields):
+- When result is "ok": fill expenses and proposedYearMonth; set reason to exactly "" (empty string).
+- When result is "not_bank_expense_report": set expenses to [] (empty array), proposedYearMonth to null, and reason to your explanation string.
+
+STEP 2 - ONLY IF result is "ok":
+Extract ALL spending line items (debits, charges, fees, purchases) the same way a user would track expenses from a statement.
+
+INSTRUCTIONS (when result is "ok"):
+- Extract EVERY single expense-like debit: purchases, payments, charges, fees, interest charges, subscriptions, taxes on charges, etc.
+- Look in tables, transaction lists, and summaries. Use wording from the statement for each concept.
+- Use the original amount as shown (do not convert currencies). Positive amounts only for expenses.
+- If an item has multiple components (e.g. subtotal + tax), extract as separate lines when the statement shows them separately.
+- Each distinct transaction line should appear only once.
+
+STATEMENT PERIOD (proposedYearMonth, when result is "ok"):
+- Set proposedYearMonth to YYYY-MM (e.g. 2025-03) from statement period, closing date, or billing cycle.
+- If a range spans months, use the period end month.
+- Set proposedYearMonth to null only when no usable date exists.
+
+EXCLUDE from expenses (when result is "ok"):
+- Credits to the account, incoming transfers, refunds counted as positive credits (not as expense lines)
+- Running balances, subtotals that are not individual charges
+- Pure metadata (do not invent expense rows from dates or account numbers alone)
+
+CRITICAL when result is "ok": Missing statement charges is an error. Be thorough.
 
 Document text:
 ${text}`,
   });
 
-  return output;
+  if (!output) {
+    return null;
+  }
+
+  if (output.result === "not_bank_expense_report") {
+    const reason = output.reason.trim();
+    return {
+      ok: false,
+      reason:
+        reason ||
+        "This document does not look like a bank or card statement with transactions.",
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      expenses: output.expenses,
+      proposedYearMonth: output.proposedYearMonth,
+    },
+  };
 }
 
 function countClassifiedExpenses(result: ClassifiedExpenses): number {

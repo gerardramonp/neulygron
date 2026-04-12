@@ -57,9 +57,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const extractedExpenses = await extractExpensesFromText(text);
+    const extraction = await extractExpensesFromText(text);
 
-    if (!extractedExpenses?.expenses?.length) {
+    if (!extraction) {
+      return NextResponse.json(
+        { message: "Unable to extract expenses from the document." },
+        { status: 422 },
+      );
+    }
+
+    if (!extraction.ok) {
+      return NextResponse.json(
+        {
+          code: "NOT_BANK_EXPENSE_REPORT",
+          message: extraction.reason,
+        },
+        { status: 422 },
+      );
+    }
+
+    const extractedExpenses = extraction.data;
+
+    if (!extractedExpenses.expenses.length) {
       return NextResponse.json(
         { message: "No expenses found in the document." },
         { status: 422 },

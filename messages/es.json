@@ -20,7 +20,8 @@
     "saveReportUnauthorized": "Inicia sesión para guardar un informe.",
     "errors": {
       "invalidType": "Sube un archivo en formato PDF.",
-      "uploadFailed": "No pudimos clasificar tu archivo. Intenta nuevamente."
+      "uploadFailed": "No pudimos clasificar tu archivo. Intenta nuevamente.",
+      "notBankExpenseReport": "Este archivo no parece un extracto bancario ni un resumen de tarjeta. Exporta desde tu banco un PDF con tus movimientos e inténtalo de nuevo."
     }
   },
   "ReportsPage": {
