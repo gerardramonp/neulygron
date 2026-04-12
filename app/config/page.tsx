@@ -60,7 +60,7 @@ export default function ConfigPage() {
             Array.isArray(payload?.categories) ? payload.categories : [],
           );
         }
-      } catch (error) {
+      } catch {
         if (isActive) {
           setFetchError(t("errors.retry"));
         }
@@ -76,7 +76,7 @@ export default function ConfigPage() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [t]);
 
   const handleCategoryCreated = (category: Category) => {
     setCategories((prev) => [...prev, category]);
@@ -91,6 +91,18 @@ export default function ConfigPage() {
     setCategories((prev) =>
       prev.map((category) =>
         category.id === id ? { ...category, [field]: value } : category,
+      ),
+    );
+  };
+
+  const handleRevertFields = (
+    id: string,
+    name: string,
+    description: string,
+  ) => {
+    setCategories((prev) =>
+      prev.map((category) =>
+        category.id === id ? { ...category, name, description } : category,
       ),
     );
   };
@@ -181,6 +193,9 @@ export default function ConfigPage() {
                     category={category}
                     onFieldChange={(field, value) =>
                       handleFieldChange(category.id, field, value)
+                    }
+                    onRevertFields={(name, description) =>
+                      handleRevertFields(category.id, name, description)
                     }
                     onDelete={() => handleDelete(category.id)}
                     onError={setFetchError}

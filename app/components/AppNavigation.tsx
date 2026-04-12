@@ -13,12 +13,10 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-const BASE_NAV_ITEMS = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "Config", href: "/config", icon: Settings },
-];
+const BASE_NAV_ITEMS = [{ label: "Home", href: "/", icon: Home }];
 
 const AUTH_NAV_ITEMS = [
+  { label: "Config", href: "/config", icon: Settings },
   { label: "Reports", href: "/reports", icon: CalendarDays },
 ];
 

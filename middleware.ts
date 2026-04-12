@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
+import { env } from "@/lib/env";
+import { pathRequiresAuthentication } from "@/lib/auth/route-guard";
 import {
   registerLimiter,
   authLimiter,
@@ -10,10 +13,8 @@ import {
 } from "@/lib/rate-limit";
 
 function getClientIp(request: NextRequest): string {
-  // Try various headers that might contain the real IP
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    // x-forwarded-for can be a comma-separated list, take the first one
     return forwardedFor.split(",")[0].trim();
   }
 
@@ -22,65 +23,78 @@ function getClientIp(request: NextRequest): string {
     return realIp;
   }
 
-  // Fallback for local development
   return "127.0.0.1";
 }
 
 function selectLimiter(pathname: string): RateLimiter {
-  // Registration endpoint - strictest limits
   if (pathname === "/api/auth/register") {
     return registerLimiter;
   }
 
-  // NextAuth endpoints (login, OAuth callbacks)
   if (pathname.startsWith("/api/auth/")) {
     return authLimiter;
   }
 
-  // AI classification endpoint - expensive operations
   if (pathname === "/api/expenses/classify") {
     return classifyLimiter;
   }
 
-  // All other API endpoints
   return apiLimiter;
 }
 
 export async function middleware(request: NextRequest) {
-  // Skip rate limiting if disabled (for testing/development)
-  if (process.env.RATE_LIMIT_DISABLED === "true") {
-    return NextResponse.next();
-  }
-
   const pathname = request.nextUrl.pathname;
 
-  // Only rate limit API routes
-  if (!pathname.startsWith("/api/")) {
-    return NextResponse.next();
-  }
+  if (pathname.startsWith("/api/")) {
+    if (process.env.RATE_LIMIT_DISABLED === "true") {
+      return NextResponse.next();
+    }
 
-  const clientIp = getClientIp(request);
-  const limiter = selectLimiter(pathname);
+    const clientIp = getClientIp(request);
+    const limiter = selectLimiter(pathname);
 
-  try {
-    await limiter.consume(clientIp);
-    return NextResponse.next();
-  } catch {
-    // Rate limit exceeded
-    return NextResponse.json(
-      {
-        message: "Too many requests. Please try again later.",
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": "60",
+    try {
+      await limiter.consume(clientIp);
+    } catch {
+      return NextResponse.json(
+        {
+          message: "Too many requests. Please try again later.",
         },
-      },
-    );
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
+
+    return NextResponse.next();
   }
+
+  if (pathRequiresAuthentication(pathname)) {
+    const token = await getToken({
+      req: request,
+      secret: env.AUTH_SECRET,
+    });
+
+    if (!token) {
+      const login = new URL("/login", request.url);
+      login.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(login);
+    }
+  }
+
+  return NextResponse.next();
 }
 
+// Keep in sync with `AUTH_REQUIRED_PATH_PREFIXES` in `lib/auth/route-guard.ts`.
 export const config = {
-  matcher: "/api/:path*",
+  matcher: [
+    "/api/:path*",
+    "/config",
+    "/config/:path*",
+    "/reports",
+    "/reports/:path*",
+  ],
 };
