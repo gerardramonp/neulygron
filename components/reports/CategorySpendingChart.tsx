@@ -18,6 +18,7 @@ import {
 import type { PieLabelRenderProps, TooltipContentProps } from "recharts";
 
 import { cn } from "@/lib/utils";
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
 
 export type CategorySpendingRow = {
   name: string;
@@ -112,6 +113,14 @@ export function CategorySpendingChart({
   const t = useTranslations("ReportsPage");
   const [chartType, setChartType] = useState<ChartType>("bar");
 
+  const setChartTypeTracked = (next: ChartType) => {
+    setChartType((prev) => {
+      if (prev === next) return prev;
+      trackEvent(MIXPANEL_EVENTS.CHART_TYPE_TOGGLED, { chartType: next });
+      return next;
+    });
+  };
+
   const amountFmt = useMemo(
     () =>
       new Intl.NumberFormat(locale, {
@@ -202,7 +211,7 @@ export function CategorySpendingChart({
         >
           <button
             type="button"
-            onClick={() => setChartType("bar")}
+            onClick={() => setChartTypeTracked("bar")}
             aria-pressed={chartType === "bar"}
             className={cn(
               "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
@@ -215,7 +224,7 @@ export function CategorySpendingChart({
           </button>
           <button
             type="button"
-            onClick={() => setChartType("pie")}
+            onClick={() => setChartTypeTracked("pie")}
             aria-pressed={chartType === "pie"}
             className={cn(
               "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",

@@ -23,6 +23,12 @@ import {
   parseYearMonth,
 } from "@/lib/year-month";
 import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
+import {
+  trackEvent,
+  incrementPeople,
+  MIXPANEL_EVENTS,
+} from "@/lib/analytics/mixpanel";
+import { postCategoryConcept } from "@/lib/analytics/post-category-concept";
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -124,14 +130,19 @@ export default function Home() {
 
       // Persist concept on category so the model improves over time (only for existing user categories)
       if (expense?.concept?.trim() && category?.id) {
-        fetch(`/api/categories/${category.id}/concepts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ concept: expense.concept.trim() }),
-        }).catch(() => {
-          // Silently ignore; UI already updated
-        });
+        postCategoryConcept(
+          category.id,
+          expense.concept.trim(),
+          categoryName,
+        );
       }
+
+      trackEvent(MIXPANEL_EVENTS.EXPENSE_ASSIGNED, {
+        fromState: "uncategorized",
+        toCategory: categoryName,
+        expenseConcept: expense?.concept ?? "",
+        expenseAmount: expense?.amount ?? 0,
+      });
     },
     [classificationResult, categories],
   );
@@ -163,14 +174,19 @@ export default function Home() {
       });
 
       if (expense?.concept?.trim() && targetCategory?.id) {
-        fetch(`/api/categories/${targetCategory.id}/concepts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ concept: expense.concept.trim() }),
-        }).catch(() => {
-          // Silently ignore; UI already updated
-        });
+        postCategoryConcept(
+          targetCategory.id,
+          expense.concept.trim(),
+          toCategoryName,
+        );
       }
+
+      trackEvent(MIXPANEL_EVENTS.EXPENSE_REASSIGNED, {
+        fromCategory: fromCategoryName,
+        toCategory: toCategoryName,
+        expenseConcept: expense?.concept ?? "",
+        expenseAmount: expense?.amount ?? 0,
+      });
     },
     [classificationResult, categories],
   );
@@ -205,6 +221,9 @@ export default function Home() {
 
     setSelectedFile(file);
     setFileError(null);
+    trackEvent(MIXPANEL_EVENTS.PDF_SELECTED, {
+      fileSizeMB: Math.round((file.size / (1024 * 1024)) * 1000) / 1000,
+    });
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -250,6 +269,33 @@ export default function Home() {
     setSaveReportError(null);
     setSaveReportSuccess(false);
 
+    trackEvent(MIXPANEL_EVENTS.CLASSIFICATION_STARTED);
+    const startedAt = performance.now();
+
+    const classifyErrorType = (
+      response: Response,
+      message: { code?: string; message?: unknown },
+    ): string => {
+      if (response.status === 401) return "unauthorized";
+      if (message.code === "NOT_BANK_EXPENSE_REPORT") {
+        return "not_bank_statement";
+      }
+      if (response.status === 415 || response.status === 400) {
+        return "invalid_upload";
+      }
+      if (response.status === 422) {
+        const m =
+          typeof message.message === "string" ? message.message : "";
+        if (m.toLowerCase().includes("no readable text")) return "empty_pdf";
+        if (m.includes("No expenses found")) return "no_expenses";
+        if (m.includes("Unable to extract")) return "extraction_failed";
+        if (m.includes("Unable to classify")) return "classification_failed";
+        return "unprocessable";
+      }
+      if (response.status >= 500) return "server_error";
+      return "unknown";
+    };
+
     const formData = new FormData();
     formData.append("file", selectedFile);
 
@@ -267,6 +313,9 @@ export default function Home() {
       };
 
       if (!response.ok) {
+        trackEvent(MIXPANEL_EVENTS.CLASSIFICATION_FAILED, {
+          errorType: classifyErrorType(response, message),
+        });
         if (message.code === "NOT_BANK_EXPENSE_REPORT") {
           setClassificationError(t("errors.notBankExpenseReport"));
           return;
@@ -294,6 +343,26 @@ export default function Home() {
       };
       setClassificationResult(sortedResult);
 
+      const categorizedCount = sortedResult.categories.reduce(
+        (sum, cat) => sum + cat.expenses.length,
+        0,
+      );
+      const uncategorizedCount = sortedResult.uncategorized.length;
+      const totalExpenses = categorizedCount + uncategorizedCount;
+
+      trackEvent(MIXPANEL_EVENTS.CLASSIFICATION_COMPLETED, {
+        totalExpenses,
+        categorizedCount,
+        uncategorizedCount,
+        categoryCount: sortedResult.categories.length,
+        durationMs: Math.round(performance.now() - startedAt),
+        proposedYearMonth:
+          typeof message.proposedYearMonth === "string"
+            ? message.proposedYearMonth
+            : null,
+      });
+      incrementPeople("totalExpensesClassified", totalExpenses);
+
       const proposed =
         typeof message.proposedYearMonth === "string"
           ? parseYearMonth(message.proposedYearMonth)
@@ -303,6 +372,9 @@ export default function Home() {
         setReportMonth(proposed.month);
       }
     } catch {
+      trackEvent(MIXPANEL_EVENTS.CLASSIFICATION_FAILED, {
+        errorType: "network_error",
+      });
       setClassificationError(t("errors.uploadFailed"));
     } finally {
       setIsClassifying(false);
@@ -333,6 +405,31 @@ export default function Home() {
         })),
       }));
 
+    let isUpdate = false;
+    try {
+      const existingRes = await fetch(
+        `/api/expenses/monthly-report?yearMonth=${encodeURIComponent(yearMonth)}`,
+      );
+      if (existingRes.ok) {
+        const existingBody = (await existingRes.json().catch(() => null)) as {
+          report?: { id?: string };
+        } | null;
+        isUpdate = Boolean(existingBody?.report);
+      }
+    } catch {
+      // ignore — treat as new save
+    }
+
+    const totalExpenses = categoriesPayload.reduce(
+      (n, cat) => n + cat.expenses.length,
+      0,
+    );
+    const totalAmount = categoriesPayload.reduce(
+      (sum, cat) =>
+        sum + cat.expenses.reduce((s, e) => s + e.amount, 0),
+      0,
+    );
+
     try {
       const response = await fetch("/api/expenses/monthly-report", {
         method: "POST",
@@ -355,6 +452,15 @@ export default function Home() {
         setSaveReportError(msg);
         return;
       }
+
+      trackEvent(MIXPANEL_EVENTS.MONTHLY_REPORT_SAVED, {
+        yearMonth,
+        categoryCount: categoriesPayload.length,
+        totalExpenses,
+        totalAmount,
+        isUpdate,
+      });
+      incrementPeople("totalReportsSaved", 1);
 
       setSaveReportSuccess(true);
     } catch {

@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { safeInternalRedirectPath } from "@/lib/auth/safe-redirect";
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
 
 function LoginForm() {
   const router = useRouter();
@@ -56,11 +57,14 @@ function LoginForm() {
       return;
     }
 
+    trackEvent(MIXPANEL_EVENTS.USER_SIGNED_IN, { provider: "credentials" });
+
     router.push(postLoginPath);
     router.refresh();
   };
 
   const handleGoogleSignIn = () => {
+    trackEvent(MIXPANEL_EVENTS.USER_SIGNED_IN, { provider: "google" });
     signIn("google", { callbackUrl: postLoginPath });
   };
 

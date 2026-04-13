@@ -13,6 +13,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+
 const BASE_NAV_ITEMS = [{ label: "Home", href: "/", icon: Home }];
 
 const AUTH_NAV_ITEMS = [
@@ -32,6 +34,11 @@ export default function AppNavigation() {
   const navItems = isAuthenticated
     ? [...BASE_NAV_ITEMS, ...AUTH_NAV_ITEMS]
     : [...BASE_NAV_ITEMS, ...GUEST_NAV_ITEMS];
+
+  const handleSignOut = () => {
+    trackEvent(MIXPANEL_EVENTS.USER_SIGNED_OUT);
+    void signOut({ callbackUrl: "/" });
+  };
 
   return (
     <>
@@ -68,7 +75,7 @@ export default function AppNavigation() {
         {isAuthenticated && (
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={handleSignOut}
             className="mt-auto text-xs flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
           >
             <span className="rounded-lg border border-border bg-sidebar text-sidebar-foreground p-2">
@@ -106,7 +113,7 @@ export default function AppNavigation() {
           {isAuthenticated && (
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={handleSignOut}
               className="rounded-full backdrop-blur-xs px-4 py-1 text-sm transition-colors flex flex-col items-center bg-sidebar-accent font-bold text-sidebar-accent-foreground"
             >
               <LogOut className="w-5 h-5" strokeWidth={2.5} />

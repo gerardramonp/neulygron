@@ -11,6 +11,8 @@ import { GripVertical, Loader2, Trash2 } from "lucide-react";
 
 import type { Category } from "./types";
 
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+
 const AUTOSAVE_DEBOUNCE_MS = 550;
 
 type CategoryCardProps = {
@@ -140,6 +142,17 @@ export default function CategoryCard({
             description: resolvedDesc,
           };
 
+          const changedFields: ("name" | "description")[] = [];
+          if (sent.name !== beforeAttempt.name) changedFields.push("name");
+          if (sent.description !== beforeAttempt.description) {
+            changedFields.push("description");
+          }
+          if (changedFields.length > 0) {
+            trackEvent(MIXPANEL_EVENTS.CATEGORY_UPDATED, {
+              field: changedFields.join(","),
+            });
+          }
+
           const latest = categoryRef.current;
           if (
             latest.name === sent.name &&
@@ -207,6 +220,10 @@ export default function CategoryCard({
         onError?.(message);
         return;
       }
+
+      trackEvent(MIXPANEL_EVENTS.CATEGORY_DELETED, {
+        categoryName: categoryRef.current.name,
+      });
 
       onDelete();
     } catch (error) {
