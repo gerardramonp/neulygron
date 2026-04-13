@@ -23,6 +23,8 @@ import CategoryCard from "./CategoryCard";
 import CreateCategoryDialog from "./CreateCategoryDialog";
 import type { Category } from "./types";
 
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+
 export default function ConfigPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -143,7 +145,12 @@ export default function ConfigPage() {
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         setFetchError(payload?.message ?? "Unable to reorder categories.");
+        return;
       }
+
+      trackEvent(MIXPANEL_EVENTS.CATEGORIES_REORDERED, {
+        categoryCount: reordered.length,
+      });
     } catch {
       setFetchError("Unable to reorder categories. Please try again.");
     }

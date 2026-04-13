@@ -17,6 +17,8 @@ import { StyledInput } from "@/components/ui/styled-input";
 import type { Category } from "./types";
 import { useTranslations } from "next-intl";
 
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+
 type FormErrors = {
   name?: string;
   description?: string;
@@ -89,6 +91,10 @@ export default function CreateCategoryDialog({
         position: data.category.position,
         userId: data?.category?.userId,
       };
+
+      trackEvent(MIXPANEL_EVENTS.CATEGORY_CREATED, {
+        categoryName: normalized.name,
+      });
 
       onCategoryCreated(normalized);
       setFormValues(EMPTY_FORM);

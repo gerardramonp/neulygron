@@ -25,6 +25,9 @@ import { buildYearRange, formatYearMonth, parseYearMonth } from "@/lib/year-mont
 import { cn, formatAmount } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+import { postCategoryConcept } from "@/lib/analytics/post-category-concept";
+
 type LoadedReport = {
   id: string;
   yearMonth: string;
@@ -166,6 +169,9 @@ export default function ReportsPage() {
             ? r.updatedAt
             : null,
       });
+      trackEvent(MIXPANEL_EVENTS.MONTHLY_REPORT_VIEWED, {
+        yearMonth: r.yearMonth,
+      });
     } catch {
       setLoadErrorMonthly(t("loadError"));
     } finally {
@@ -197,15 +203,22 @@ export default function ReportsPage() {
       );
       if (!nextCategories) return;
 
+      trackEvent(MIXPANEL_EVENTS.EXPENSE_REASSIGNED, {
+        fromCategory: fromCategoryName,
+        toCategory: toCategoryName,
+        expenseConcept: expense?.concept ?? "",
+        expenseAmount: expense?.amount ?? 0,
+      });
+
       setReport({ ...prev, categories: nextCategories });
       reportRef.current = { ...prev, categories: nextCategories };
 
       if (expense?.concept?.trim() && targetCategory?.id) {
-        fetch(`/api/categories/${targetCategory.id}/concepts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ concept: expense.concept.trim() }),
-        }).catch(() => {});
+        postCategoryConcept(
+          targetCategory.id,
+          expense.concept.trim(),
+          toCategoryName,
+        );
       }
 
       setReportEditSaveError(null);
@@ -238,6 +251,12 @@ export default function ReportsPage() {
           await fetchReport();
           return;
         }
+
+        trackEvent(MIXPANEL_EVENTS.REPORT_EXPENSE_REASSIGNED, {
+          yearMonth: prev.yearMonth,
+          fromCategory: fromCategoryName,
+          toCategory: toCategoryName,
+        });
 
         const r = body?.report;
         if (
@@ -301,6 +320,7 @@ export default function ReportsPage() {
       }
 
       setYearlyReport(r as YearlyReportResponseBody);
+      trackEvent(MIXPANEL_EVENTS.YEARLY_REPORT_VIEWED, { year: reportYear });
     } catch {
       setLoadErrorYearly(t("yearlyLoadError"));
     } finally {

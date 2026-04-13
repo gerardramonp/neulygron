@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";
+import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -55,11 +56,17 @@ export default function RegisterPage() {
         return;
       }
 
-      await signIn("credentials", {
+      trackEvent(MIXPANEL_EVENTS.USER_SIGNED_UP, { provider: "credentials" });
+
+      const signInResult = await signIn("credentials", {
         email: parsed.data.email,
         password: parsed.data.password,
         redirect: false,
       });
+
+      if (!signInResult?.error) {
+        trackEvent(MIXPANEL_EVENTS.USER_SIGNED_IN, { provider: "credentials" });
+      }
 
       router.push("/");
       router.refresh();
@@ -72,6 +79,7 @@ export default function RegisterPage() {
   };
 
   const handleGoogleSignIn = () => {
+    trackEvent(MIXPANEL_EVENTS.USER_SIGNED_UP, { provider: "google" });
     signIn("google", { callbackUrl: "/" });
   };
 

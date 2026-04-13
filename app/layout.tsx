@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 
+import MixpanelProvider from "@/components/MixpanelProvider";
 import AppNavigation from "./components/AppNavigation";
 import AuthSessionProvider from "./components/AuthSessionProvider";
 import "./globals.css";
@@ -39,12 +40,14 @@ export default async function RootLayout({
       >
         <AuthSessionProvider>
           <NextIntlClientProvider>
-            <div className="min-h-screen bg-background text-foreground md:flex">
-              <AppNavigation />
-              <div className="flex-1 min-h-screen pb-24 md:pb-0 bg-background">
-                {children}
+            <MixpanelProvider>
+              <div className="min-h-screen bg-background text-foreground md:flex">
+                <AppNavigation />
+                <div className="flex-1 min-h-screen pb-24 md:pb-0 bg-background">
+                  {children}
+                </div>
               </div>
-            </div>
+            </MixpanelProvider>
           </NextIntlClientProvider>
         </AuthSessionProvider>
       </body>
