@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { animate, stagger } from "animejs";
+import { stagger, createTimeline } from "animejs";
 import {
   FileText,
   Sparkles,
@@ -11,6 +11,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useScrollAnimate } from "@/lib/hooks/use-scroll-animate";
+import SectionHeader from "./SectionHeader";
 
 const features = [
   {
@@ -53,37 +54,46 @@ const features = [
 
 export default function FeaturesSection() {
   const animateCards = useCallback((el: HTMLElement) => {
-    animate(el.querySelectorAll("[data-feature]"), {
+    const cards = el.querySelectorAll("[data-feature]");
+    const tl = createTimeline({ defaults: { ease: "outExpo" } });
+
+    tl.add(cards, {
       opacity: [0, 1],
-      translateY: [32, 0],
-      delay: stagger(100),
-      duration: 600,
-      ease: "outExpo",
-    });
+      translateY: [40, 0],
+      scale: [0.88, 1],
+      rotate: ["-2deg", "0deg"],
+      delay: stagger(90, { grid: [3, 2], from: "center" }),
+      duration: 700,
+    }, 0);
+
+    tl.add(el.querySelectorAll("[data-icon-bg]"), {
+      scale: [0, 1],
+      rotate: ["-90deg", "0deg"],
+      delay: stagger(90, { grid: [3, 2], from: "center" }),
+      duration: 500,
+    }, 200);
   }, []);
 
-  const ref = useScrollAnimate(animateCards, { threshold: 0.08 });
+  const ref = useScrollAnimate(animateCards, { threshold: 0.06 });
 
   return (
     <section className="bg-muted/30 py-24 md:py-32">
+      <SectionHeader
+        tag="Features"
+        title="Everything you need to manage expenses"
+      />
       <div ref={ref} className="mx-auto max-w-6xl px-6">
-        <div className="mb-16 text-center">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-primary">
-            Features
-          </p>
-          <h2 className="text-3xl font-bold sm:text-4xl">
-            Everything you need to manage expenses
-          </h2>
-        </div>
-
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.title}
               data-feature
-              className="group rounded-2xl border border-border/50 bg-card/70 p-6 opacity-0 transition-shadow hover:shadow-lg"
+              className="group rounded-2xl border border-border/50 bg-card/70 p-6 opacity-0 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+              <div
+                data-icon-bg
+                className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+              >
                 <f.icon className="h-6 w-6" strokeWidth={1.5} />
               </div>
               <h3 className="mb-2 text-lg font-semibold">{f.title}</h3>
