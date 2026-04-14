@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-import type { Category } from "@/app/config/types";
+import type { Category } from "@/app/(app)/config/types";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

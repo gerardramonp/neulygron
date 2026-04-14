@@ -68,7 +68,7 @@ export default function RegisterPage() {
         trackEvent(MIXPANEL_EVENTS.USER_SIGNED_IN, { provider: "credentials" });
       }
 
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
   const handleGoogleSignIn = () => {
     trackEvent(MIXPANEL_EVENTS.USER_SIGNED_UP, { provider: "google" });
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (

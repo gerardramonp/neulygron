@@ -15,7 +15,7 @@ import {
 
 import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
 
-const BASE_NAV_ITEMS = [{ label: "Home", href: "/", icon: Home }];
+const BASE_NAV_ITEMS = [{ label: "Home", href: "/dashboard", icon: Home }];
 
 const AUTH_NAV_ITEMS = [
   { label: "Config", href: "/config", icon: Settings },
