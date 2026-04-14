@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import type { Category } from "@/app/config/types";
+import type { Category } from "@/app/(app)/config/types";
 
 interface AssignCategoryButtonProps {
   categories: Category[];

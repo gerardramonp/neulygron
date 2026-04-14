@@ -16,7 +16,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const postLoginPath = safeInternalRedirectPath(
     searchParams.get("callbackUrl"),
-    "/",
+    "/dashboard",
   );
 
   const [formState, setFormState] = useState<LoginInput>({
