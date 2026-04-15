@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "@/app/components/ThemeToggle";
 
 export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -30,7 +31,8 @@ export default function LandingNav() {
           <span className="text-foreground">Lygron</span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <ThemeToggle variant="inline" />
           {isAuth ? (
             <Button asChild>
               <Link href="/dashboard">Go to Dashboard</Link>
