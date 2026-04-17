@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { MIXPANEL_EVENTS, trackEvent } from "@/lib/analytics/mixpanel";
+import ThemeToggle from "@/app/components/ThemeToggle";
 
 const BASE_NAV_ITEMS = [{ label: "Home", href: "/dashboard", icon: Home }];
 
@@ -72,22 +73,29 @@ export default function AppNavigation() {
             );
           })}
         </div>
-        {isAuthenticated && (
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="mt-auto text-xs flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <span className="rounded-lg border border-border bg-sidebar text-sidebar-foreground p-2">
-              <LogOut className="w-5 h-5" />
-            </span>
-            <span>Sign out</span>
-          </button>
-        )}
+        <div className="mt-auto flex flex-col items-center gap-3 pt-4">
+          <ThemeToggle
+            variant="inline"
+            orientation="vertical"
+            tone="onPrimary"
+          />
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="text-xs flex flex-col items-center gap-1 text-sidebar-desktop-foreground/80 hover:text-sidebar-desktop-foreground"
+            >
+              <span className="rounded-lg border border-white/15 bg-white/5 p-2">
+                <LogOut className="w-5 h-5" />
+              </span>
+              <span>Sign out</span>
+            </button>
+          )}
+        </div>
       </aside>
 
-      <nav className="md:hidden fixed inset-x-0 bottom-4 z-40 flex justify-center">
-        <div className="flex gap-4 p-1 bg-sidebar backdrop-blur-xs rounded-full border border-border shadow-lg">
+      <nav className="md:hidden fixed inset-x-0 bottom-4 z-40 flex justify-center px-2">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-2 p-1.5 bg-sidebar backdrop-blur-xs rounded-full border border-border shadow-lg sm:gap-3">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -110,6 +118,9 @@ export default function AppNavigation() {
               </Link>
             );
           })}
+          <div className="flex shrink-0 items-center px-1">
+            <ThemeToggle variant="inline" />
+          </div>
           {isAuthenticated && (
             <button
               type="button"
