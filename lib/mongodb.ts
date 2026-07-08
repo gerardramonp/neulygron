@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import { env } from "@/lib/env";
 
-const MONGODB_URI = `mongodb+srv://${env.DB_USER}:${env.DB_PASSWORD}@neulygrondb.khimgi9.mongodb.net/`;
+const MONGODB_URI = `mongodb+srv://${env.DB_USER}:${env.DB_PASSWORD}@neulygrondb.khimgi9.mongodb.net/?appName=neulygrondb`;
 
 type MongooseCache = {
   conn: typeof mongoose | null;
