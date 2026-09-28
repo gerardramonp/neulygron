@@ -2,16 +2,20 @@
   "name": "neulygron",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test:classify": "npx tsx scripts/test-classify-consistency.ts",
+    "test:classify:unit": "vitest run lib/services/expense-classifier.test.ts",
     "test:extraction": "npx tsx scripts/test-extraction-consistency.ts"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.70",
+    "@ai-sdk/react": "^4.0.121",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -24,7 +28,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/nextjs": "^10",
     "@types/bcryptjs": "^2.4.6",
-    "ai": "^6.0.68",
+    "ai": "^7.0.118",
     "animejs": "^4.3.6",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -49,13 +53,14 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }

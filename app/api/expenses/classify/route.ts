@@ -14,12 +14,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const startMs = performance.now();
-  console.log("cclog starting classify....");
+  console.log("cclog starting classify endpoint....");
+  console.log("cclog AI_GATEWAY_API_KEY:", process.env.AI_GATEWAY_API_KEY);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
+
+  console.log("cclog starting validation of pdf....");
 
   const validation = await validatePdfUpload(request);
 
@@ -38,9 +41,7 @@ export async function POST(request: Request) {
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
-    const orderByName = new Map(
-      categories.map((c) => [c.name, c.position]),
-    );
+    const orderByName = new Map(categories.map((c) => [c.name, c.position]));
 
     const categoriesData: CategoryData[] = categories.map((c) => ({
       name: c.name,
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("cclog starting extraction of expenses....");
     const extraction = await extractExpensesFromText(text);
 
     if (!extraction) {
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log("cclog starting classification of expenses....");
     const classifiedExpenses = await classifyExpenses(
       extractedExpenses.expenses,
       categoriesData,
@@ -97,20 +100,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const categoriesOrdered = [...classifiedExpenses.categories].map(
-      (cat) => ({
-        ...cat,
-        position:
-          orderByName.get(cat.name) ?? Number.POSITIVE_INFINITY,
-      }),
-    );
+    const categoriesOrdered = [...classifiedExpenses.categories].map((cat) => ({
+      ...cat,
+      position: orderByName.get(cat.name) ?? Number.POSITIVE_INFINITY,
+    }));
     categoriesOrdered.sort((a, b) => {
       if (a.position !== b.position) return a.position - b.position;
       return a.name.localeCompare(b.name);
     });
 
     console.log(
-      `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
+      `cclog [expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
     );
     return NextResponse.json(
       {

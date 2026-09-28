@@ -17,10 +17,46 @@ interface ClassifiedExpenses {
   uncategorized: Expense[];
 }
 
+function assertValidClassification(
+  value: unknown,
+): asserts value is ClassifiedExpenses {
+  if (!value || typeof value !== "object") {
+    throw new Error("Classification response must be an object");
+  }
+
+  const result = value as Partial<ClassifiedExpenses>;
+  if (!Array.isArray(result.categories)) {
+    throw new Error("Classification response is missing categories");
+  }
+  if (!Array.isArray(result.uncategorized)) {
+    throw new Error(
+      "Classification response must include the uncategorized fallback bucket",
+    );
+  }
+
+  const allExpenses = [
+    ...result.categories.flatMap((category) => category.expenses),
+    ...result.uncategorized,
+  ];
+  if (
+    allExpenses.some(
+      (expense) =>
+        typeof expense?.concept !== "string" ||
+        typeof expense?.amount !== "number",
+    )
+  ) {
+    throw new Error("Classification response contains an invalid expense");
+  }
+}
+
 interface ComparisonResult {
   totalExpenseCount: { values: number[]; consistent: boolean };
   totalAmount: { values: number[]; consistent: boolean; tolerance: number };
-  categoryNames: { values: string[][]; consistent: boolean };
+  categoryNames: {
+    values: string[][];
+    expected: string[];
+    consistent: boolean;
+  };
   expenseAmounts: { values: number[][]; consistent: boolean };
   overallConsistent: boolean;
 }
@@ -109,7 +145,29 @@ async function callClassifyEndpoint(
     throw new Error(`API call failed (${response.status}): ${text}`);
   }
 
-  return response.json();
+  const result: unknown = await response.json();
+  assertValidClassification(result);
+  return result;
+}
+
+async function getConfiguredCategoryNames(): Promise<string[]> {
+  if (!sessionCookie) {
+    sessionCookie = await login();
+  }
+
+  const response = await fetch(`${API_URL}/api/categories`, {
+    headers: { Cookie: sessionCookie },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Categories call failed (${response.status}): ${text}`);
+  }
+
+  const body = (await response.json()) as {
+    categories: Array<{ name: string }>;
+  };
+  return body.categories.map((category) => category.name);
 }
 
 function getAllExpenses(result: ClassifiedExpenses): Expense[] {
@@ -132,7 +190,10 @@ function numbersEqual(a: number, b: number, tolerance: number): boolean {
   return Math.abs(a - b) <= tolerance;
 }
 
-function compareResults(results: ClassifiedExpenses[]): ComparisonResult {
+function compareResults(
+  results: ClassifiedExpenses[],
+  configuredCategoryNames: string[],
+): ComparisonResult {
   const expenseCounts = results.map((r) => getAllExpenses(r).length);
   const totalAmounts = results.map((r) => getTotalAmount(getAllExpenses(r)));
   const categoryNames = results.map((r) =>
@@ -150,8 +211,9 @@ function compareResults(results: ClassifiedExpenses[]): ComparisonResult {
     numbersEqual(a, totalAmounts[0], AMOUNT_TOLERANCE),
   );
 
+  const expectedCategoryNames = [...configuredCategoryNames].sort();
   const categoryConsistent = categoryNames.every((names) =>
-    arraysEqual(names, categoryNames[0]),
+    arraysEqual(names, expectedCategoryNames),
   );
 
   const amountsConsistent = expenseAmounts.every((amounts) =>
@@ -170,6 +232,7 @@ function compareResults(results: ClassifiedExpenses[]): ComparisonResult {
     },
     categoryNames: {
       values: categoryNames,
+      expected: expectedCategoryNames,
       consistent: categoryConsistent,
     },
     expenseAmounts: {
@@ -190,6 +253,11 @@ async function runConsistencyTest(): Promise<void> {
   console.log(`🌐 API: ${API_URL}\n`);
 
   const results: ClassifiedExpenses[] = [];
+  const configuredCategoryNames = await getConfiguredCategoryNames();
+
+  console.log(
+    `🏷️  Configured categories: [${configuredCategoryNames.join(", ")}]\n`,
+  );
 
   for (let i = 0; i < NUM_RUNS; i++) {
     console.log(`  Run ${i + 1}/${NUM_RUNS}...`);
@@ -207,7 +275,7 @@ async function runConsistencyTest(): Promise<void> {
 
   console.log(`\n📊 Comparison Results:\n`);
 
-  const comparison = compareResults(results);
+  const comparison = compareResults(results, configuredCategoryNames);
 
   console.log(
     `  Expense Count: ${comparison.totalExpenseCount.consistent ? "✓" : "✗"} ${comparison.totalExpenseCount.values.join(" vs ")}`,
@@ -216,7 +284,7 @@ async function runConsistencyTest(): Promise<void> {
     `  Total Amount:  ${comparison.totalAmount.consistent ? "✓" : "✗"} ${comparison.totalAmount.values.map((v) => v.toFixed(2)).join(" vs ")}`,
   );
   console.log(
-    `  Categories:    ${comparison.categoryNames.consistent ? "✓" : "✗"} ${comparison.categoryNames.values.map((v) => `[${v.join(", ")}]`).join(" vs ")}`,
+    `  Categories:    ${comparison.categoryNames.consistent ? "✓" : "✗"} expected [${comparison.categoryNames.expected.join(", ")}], got ${comparison.categoryNames.values.map((v) => `[${v.join(", ")}]`).join(" vs ")}`,
   );
   console.log(
     `  Amounts Match: ${comparison.expenseAmounts.consistent ? "✓" : "✗"}`,
