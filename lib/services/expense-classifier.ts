@@ -1,18 +1,18 @@
-import { generateText, Output } from "ai";
+import {
+  generateText,
+  Output,
+} from "ai";
 
 import {
-  classifyExpensesSchema,
   extractExpensesResultSchema,
   type ClassifiedExpenses,
   type ExtractedExpenses,
   type ExtractExpensesFromTextResult,
 } from "@/lib/validation/expenses";
+import { getJevClient } from "@/lib/services/jev";
 
-/** Number of expenses per classification batch. Smaller = faster per call, more parallel calls. */
-const CLASSIFY_BATCH_SIZE = 20;
-
-/** Max retries for a batch when the model returns wrong expense count. */
-const CLASSIFY_BATCH_RETRIES = 2;
+const UNCATEGORIZED_OPTION = "__uncategorized__";
+const MAX_CONFIGURED_CATEGORIES = 254;
 
 export interface CategoryData {
   name: string;
@@ -24,7 +24,7 @@ export async function extractExpensesFromText(
   text: string,
 ): Promise<ExtractExpensesFromTextResult | null> {
   const { output } = await generateText({
-    model: "openai/gpt-4o-mini",
+    model: "openai/gpt-6-luna-fast",
     temperature: 0,
     output: Output.object({ schema: extractExpensesResultSchema }),
     prompt: `You are an expert financial document analyzer for NeuLygron. Users upload PDFs that are meant to be bank-issued documents listing spending (debits/charges) so expenses can be extracted.
@@ -98,260 +98,193 @@ ${text}`,
   };
 }
 
-function countClassifiedExpenses(result: ClassifiedExpenses): number {
-  const categoryExpenses = result.categories.reduce(
-    (sum, cat) => sum + cat.expenses.length,
-    0,
-  );
-  return categoryExpenses + result.uncategorized.length;
-}
-
-/** Merges multiple batch classification results into one, preserving category order. */
-function mergeBatchResults(
-  batchResults: (ClassifiedExpenses | null)[],
-  predefinedCategoryOrder: string[] | null,
-): ClassifiedExpenses {
-  const categoryToExpenses = new Map<string, ExtractedExpenses["expenses"]>();
-  const categoryOrder: string[] = [];
-  const uncategorizedArrays: ExtractedExpenses["expenses"][] = [];
-
-  for (const result of batchResults) {
-    if (!result) continue;
-    for (const cat of result.categories) {
-      if (!categoryToExpenses.has(cat.name)) {
-        categoryOrder.push(cat.name);
-        categoryToExpenses.set(cat.name, []);
-      }
-      categoryToExpenses.get(cat.name)!.push(...cat.expenses);
-    }
-    uncategorizedArrays.push(result.uncategorized);
-  }
-
-  const uncategorized = uncategorizedArrays.flat();
-
-  const order =
-    predefinedCategoryOrder && predefinedCategoryOrder.length > 0
-      ? predefinedCategoryOrder
-      : categoryOrder;
-
-  const categories = order.map((name) => ({
-    name,
-    expenses: categoryToExpenses.get(name) ?? [],
-  }));
-
-  return { categories, uncategorized };
-}
-
 type Expense = ExtractedExpenses["expenses"][number];
 
-function expenseKey(exp: Expense): string {
-  return `${exp.concept}\n${exp.amount}`;
-}
+type JevChoiceQuestion = {
+  type: "choice";
+  instructions: {
+    question: string;
+    guidance: string;
+  };
+  criteria: Record<string, null>;
+};
 
-/** Count how many times each (concept, amount) appears in the input. */
-function countByKey(expenses: Expense[]): Map<string, number> {
-  const map = new Map<string, number>();
-  for (const exp of expenses) {
-    const k = expenseKey(exp);
-    map.set(k, (map.get(k) ?? 0) + 1);
-  }
-  return map;
-}
+type JevEvaluationRequest = {
+  state: {
+    expenses: Expense[];
+    categoryDefinitions: Record<
+      string,
+      {
+        categoryName: string;
+        description: string;
+        exampleConcepts: string[];
+      }
+    >;
+  };
+  questions: Record<string, JevChoiceQuestion>;
+};
 
-/** Ensures all predefined category names appear in the result, with empty expenses if missing. */
-function ensureAllPredefinedCategories(
-  result: ClassifiedExpenses,
-  categoryNames: string[],
-): ClassifiedExpenses {
-  if (categoryNames.length === 0) return result;
-  const byName = new Map(result.categories.map((c) => [c.name, c.expenses]));
-  const categories = categoryNames.map((name) => ({
-    name,
-    expenses: byName.get(name) ?? [],
-  }));
-  return { categories, uncategorized: result.uncategorized };
-}
+type JevEvaluationResult = {
+  answers: Record<
+    string,
+    {
+      type: "choice";
+      choice: string;
+    }
+  >;
+};
 
-/** Cap each (concept, amount) in result to at most how often it appeared in input. Removes model duplicates. */
-function capDuplicates(
-  result: ClassifiedExpenses,
-  inputExpenses: Expense[],
-): ClassifiedExpenses {
-  const maxAllowed = countByKey(inputExpenses);
+export type JevEvaluator = (
+  request: JevEvaluationRequest,
+) => Promise<JevEvaluationResult>;
 
-  const takeUpTo = (list: Expense[]): Expense[] => {
-    const used = new Map<string, number>();
-    return list.filter((exp) => {
-      const k = expenseKey(exp);
-      const limit = maxAllowed.get(k) ?? 0;
-      const count = used.get(k) ?? 0;
-      if (count >= limit) return false;
-      used.set(k, count + 1);
+const evaluateWithJev: JevEvaluator = async (request) => {
+  const result = await getJevClient().systemOne(request);
+  return { answers: result.answers };
+};
+
+type ErrorWithRateLimitDetails = {
+  statusCode?: unknown;
+  lastError?: unknown;
+  cause?: unknown;
+  errors?: unknown;
+};
+
+function isRateLimitError(error: unknown, seen = new Set<unknown>()): boolean {
+  if (!error || seen.has(error)) return false;
+  seen.add(error);
+
+  if (typeof error === "object") {
+    const details = error as ErrorWithRateLimitDetails;
+    if (details.statusCode === 429) return true;
+    if (isRateLimitError(details.lastError, seen)) return true;
+    if (isRateLimitError(details.cause, seen)) return true;
+    if (
+      Array.isArray(details.errors) &&
+      details.errors.some((item) => isRateLimitError(item, seen))
+    ) {
       return true;
-    });
-  };
-
-  return {
-    categories: result.categories.map((cat) => ({
-      name: cat.name,
-      expenses: takeUpTo(cat.expenses),
-    })),
-    uncategorized: takeUpTo(result.uncategorized),
-  };
-}
-
-/** Classifies a single batch of expenses (same model and rules, used for parallel batching). Retries when output count does not match input. */
-async function classifyExpensesBatch(
-  batchExpenses: ExtractedExpenses["expenses"],
-  categories: CategoryData[],
-  promptParts: {
-    categoryNames: string[];
-    categoryListText: string;
-    hasPredefined: boolean;
-  },
-): Promise<ClassifiedExpenses | null> {
-  const { categoryNames, categoryListText, hasPredefined } = promptParts;
-  const n = batchExpenses.length;
-
-  const prompt = `You are an expert at categorizing expenses.
-
-TASK: Distribute the ${n} expenses below across the appropriate categories.
-Some expenses may not fit any category. Those MUST be returned under "uncategorized".
-
-IMPORTANT:
-Every expense MUST appear in the output exactly once. Missing or duplicated expenses are not allowed.
-
-Use both the category name/description and the "Example concepts" (when present) to decide. Expenses whose concept is similar or identical to an example concept for a category should be placed in that category.
-
-${
-  hasPredefined
-    ? `CATEGORIES TO USE (use these names EXACTLY, case sensitive):
-${categoryNames.map((name) => `- ${name}`).join("\n")}
-
-CATEGORY DEFINITIONS AND EXAMPLE CONCEPTS:
-${categoryListText}`
-    : `No predefined categories provided. Create logical category names like "Groceries", "Transportation", "Entertainment", "Utilities", "Dining", etc.`
-}
-
-RULES (CRITICAL):
-1. Every expense MUST appear exactly once in the output
-2. Each expense must be placed EITHER:
-    - inside exactly one category
-    - OR in the "uncategorized" section if it doesn't fit any category
-3. "uncategorized" is NOT a category, but it DOES count toward the total
-4. Total expenses across all categories PLUS uncategorized must equal exactly ${n}
-5. Never drop or duplicate expenses
-6. Copy concept and amount exactly as provided
-
-FINAL VERIFICATION (MANDATORY):
-Before responding:
-
-Count expenses in all categories
-
-Count expenses in uncategorized
-
-If total is not ${n}, fix the output before returning
-
-EXPENSES TO CATEGORIZE:
-${JSON.stringify(batchExpenses, null, 2)}
-`;
-
-  let lastOutput: ClassifiedExpenses | null = null;
-  for (let attempt = 0; attempt <= CLASSIFY_BATCH_RETRIES; attempt++) {
-    const { output } = await generateText({
-      model: "openai/gpt-5-nano",
-      temperature: 0,
-      output: Output.object({ schema: classifyExpensesSchema }),
-      prompt,
-    });
-    lastOutput = output;
-
-    if (output) {
-      const outputCount = countClassifiedExpenses(output);
-      if (outputCount === n) return output;
-      console.warn(
-        `Classification batch mismatch (attempt ${attempt + 1}/${CLASSIFY_BATCH_RETRIES + 1}): input had ${n} expenses, output has ${outputCount}`,
-      );
     }
   }
 
-  return lastOutput;
+  return (
+    error instanceof Error &&
+    (error.name.includes("RateLimit") ||
+      error.message.includes("rate_limit_exceeded"))
+  );
+}
+
+export class ExpenseClassificationUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("Expense classification is temporarily unavailable.", { cause });
+    this.name = "ExpenseClassificationUnavailableError";
+  }
 }
 
 export async function classifyExpenses(
   expenses: ExtractedExpenses["expenses"],
   categories: CategoryData[],
+  evaluator: JevEvaluator = evaluateWithJev,
 ): Promise<ClassifiedExpenses | null> {
-  const hasPredefinedCategories = categories.length > 0;
-  const categoryNames = categories.map((c) => c.name);
-
-  const categoryListText = hasPredefinedCategories
-    ? categories
-        .map((c) => {
-          const desc = c.description ? ` - ${c.description}` : "";
-          const concepts =
-            (c.concepts?.length ?? 0) > 0
-              ? `\n  Example concepts (assign similar expenses here): ${(c.concepts ?? []).join(", ")}`
-              : "";
-          return `• ${c.name}${desc}${concepts}`;
-        })
-        .join("\n")
-    : "";
-
-  const promptParts = {
-    categoryNames,
-    categoryListText,
-    hasPredefined: hasPredefinedCategories,
-  };
-
-  if (expenses.length <= CLASSIFY_BATCH_SIZE) {
-    const result = await classifyExpensesBatch(
-      expenses,
-      categories,
-      promptParts,
-    );
-    if (!result) return null;
-    const withAllCategories = hasPredefinedCategories
-      ? ensureAllPredefinedCategories(result, categoryNames)
-      : result;
-    return capDuplicates(withAllCategories, expenses);
+  if (categories.length === 0) {
+    return { categories: [], uncategorized: [...expenses] };
   }
 
-  const batches: ExtractedExpenses["expenses"][] = [];
-  for (let i = 0; i < expenses.length; i += CLASSIFY_BATCH_SIZE) {
-    batches.push(expenses.slice(i, i + CLASSIFY_BATCH_SIZE));
-  }
-
-  const runBatches = async () =>
-    Promise.all(
-      batches.map((batch) =>
-        classifyExpensesBatch(batch, categories, promptParts),
-      ),
-    );
-
-  let batchResults = await runBatches();
-  let merged = mergeBatchResults(
-    batchResults,
-    hasPredefinedCategories ? categoryNames : null,
-  );
-  let totalMerged = countClassifiedExpenses(merged);
-
-  if (totalMerged !== expenses.length) {
+  if (categories.length > MAX_CONFIGURED_CATEGORIES) {
     console.warn(
-      `Classification mismatch after merge: input had ${expenses.length} expenses, merged has ${totalMerged}. Retrying all batches once.`,
+      `Jev classification supports at most ${MAX_CONFIGURED_CATEGORIES} configured categories when the uncategorized fallback is included.`,
     );
-    batchResults = await runBatches();
-    merged = mergeBatchResults(
-      batchResults,
-      hasPredefinedCategories ? categoryNames : null,
-    );
-    totalMerged = countClassifiedExpenses(merged);
-    if (totalMerged !== expenses.length) {
-      console.warn(
-        `Classification still mismatched after retry: input ${expenses.length}, merged ${totalMerged}`,
-      );
-    }
+    return null;
   }
 
-  return capDuplicates(merged, expenses);
+  if (expenses.length === 0) {
+    return {
+      categories: categories.map(({ name }) => ({ name, expenses: [] })),
+      uncategorized: [],
+    };
+  }
+
+  const optionToCategoryIndex = new Map<string, number>();
+  const categoryDefinitions: Record<
+    string,
+    {
+      categoryName: string;
+      description: string;
+      exampleConcepts: string[];
+    }
+  > = {};
+  const criteria: Record<string, null> = {};
+
+  categories.forEach((category, index) => {
+    const option = `category_${index}`;
+    optionToCategoryIndex.set(option, index);
+    categoryDefinitions[option] = {
+      categoryName: category.name,
+      description:
+        category.description?.trim() || "No description was provided.",
+      exampleConcepts: category.concepts ?? [],
+    };
+    criteria[option] = null;
+  });
+  categoryDefinitions[UNCATEGORIZED_OPTION] = {
+    categoryName: "Uncategorized",
+    description:
+      "Use only when none of the configured categories accurately fits the expense.",
+    exampleConcepts: [],
+  };
+  criteria[UNCATEGORIZED_OPTION] = null;
+
+  const questions = Object.fromEntries(
+    expenses.map((_, index) => [
+      `expense_${index}`,
+      {
+        type: "choice" as const,
+        instructions: {
+          question: `Which option in categoryDefinitions best matches expenses[${index}]?`,
+          guidance:
+            "Use the category name, description, and example concepts. Similar example concepts are strong evidence. Select __uncategorized__ only when no configured category accurately fits.",
+        },
+        criteria,
+      },
+    ]),
+  );
+
+  let result;
+  try {
+    result = await evaluator({
+      state: { expenses, categoryDefinitions },
+      questions,
+    });
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      throw new ExpenseClassificationUnavailableError(error);
+    }
+    throw error;
+  }
+
+  const categoryExpenses: Expense[][] = categories.map(() => []);
+  const uncategorized: Expense[] = [];
+
+  expenses.forEach((expense, index) => {
+    const answer = result.answers[`expense_${index}`];
+    const categoryIndex =
+      answer?.type === "choice"
+        ? optionToCategoryIndex.get(answer.choice)
+        : undefined;
+
+    if (categoryIndex === undefined) {
+      uncategorized.push(expense);
+      return;
+    }
+
+    categoryExpenses[categoryIndex].push(expense);
+  });
+
+  return {
+    categories: categories.map((category, index) => ({
+      name: category.name,
+      expenses: categoryExpenses[index],
+    })),
+    uncategorized,
+  };
 }

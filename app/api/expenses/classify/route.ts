@@ -7,6 +7,7 @@ import { parsePdf } from "@/lib/pdf";
 import {
   extractExpensesFromText,
   classifyExpenses,
+  ExpenseClassificationUnavailableError,
   CategoryData,
 } from "@/lib/services/expense-classifier";
 import { validatePdfUpload } from "@/lib/validation/pdf";
@@ -14,7 +15,6 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const startMs = performance.now();
-  console.log("cclog starting classify....");
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -38,9 +38,7 @@ export async function POST(request: Request) {
       .sort({ position: 1, createdAt: 1 })
       .lean();
 
-    const orderByName = new Map(
-      categories.map((c) => [c.name, c.position]),
-    );
+    const orderByName = new Map(categories.map((c) => [c.name, c.position]));
 
     const categoriesData: CategoryData[] = categories.map((c) => ({
       name: c.name,
@@ -97,13 +95,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const categoriesOrdered = [...classifiedExpenses.categories].map(
-      (cat) => ({
-        ...cat,
-        position:
-          orderByName.get(cat.name) ?? Number.POSITIVE_INFINITY,
-      }),
-    );
+    const categoriesOrdered = [...classifiedExpenses.categories].map((cat) => ({
+      ...cat,
+      position: orderByName.get(cat.name) ?? Number.POSITIVE_INFINITY,
+    }));
     categoriesOrdered.sort((a, b) => {
       if (a.position !== b.position) return a.position - b.position;
       return a.name.localeCompare(b.name);
@@ -121,12 +116,26 @@ export async function POST(request: Request) {
       { status: 200 },
     );
   } catch (error) {
-    console.log(
+    console.error(
       `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s (error)`,
+      error,
     );
-    console.log(error);
+
+    if (error instanceof ExpenseClassificationUnavailableError) {
+      return NextResponse.json(
+        {
+          message:
+            "Expense classification is temporarily unavailable. Please retry shortly.",
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": "15" },
+        },
+      );
+    }
+
     return NextResponse.json(
-      { message: `Unable to process PDF contents., ${error}` },
+      { message: "Unable to process PDF contents." },
       { status: 422 },
     );
   }
