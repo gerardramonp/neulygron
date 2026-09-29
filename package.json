@@ -28,6 +28,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/nextjs": "^10",
     "@types/bcryptjs": "^2.4.6",
+    "@typesafe-ai/sdk": "^0.6.0",
     "ai": "^7.0.118",
     "animejs": "^4.3.6",
     "bcryptjs": "^3.0.3",

@@ -1,32 +1,23 @@
-import { Experimental_EvaluationMockModelV4 as MockEvaluationModel } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 
 import {
   classifyExpenses,
+  ExpenseClassificationUnavailableError,
   type CategoryData,
+  type JevEvaluator,
 } from "@/lib/services/expense-classifier";
 
-type EvaluationResult = Awaited<ReturnType<MockEvaluationModel["doEvaluate"]>>;
-
-function mockJev(choices: string[]) {
-  return new MockEvaluationModel({
-    doEvaluate: async () => ({
-      answers: Object.fromEntries(
-        choices.map((choice, index) => [
-          `expense_${index}`,
-          {
-            type: "choice" as const,
-            choice,
-            probabilities: {
-              category_0: choice === "category_0" ? 1 : 0,
-              category_1: choice === "category_1" ? 1 : 0,
-              __uncategorized__: choice === "__uncategorized__" ? 1 : 0,
-            },
-          },
-        ]),
-      ) as EvaluationResult["answers"],
-      warnings: [],
-    }),
+function mockJev(choices: string[]): JevEvaluator {
+  return async () => ({
+    answers: Object.fromEntries(
+      choices.map((choice, index) => [
+        `expense_${index}`,
+        {
+          type: "choice" as const,
+          choice,
+        },
+      ]),
+    ),
   });
 }
 
@@ -78,23 +69,21 @@ describe("classifyExpenses", () => {
   });
 
   it("bypasses Jev when the user has no categories", async () => {
-    const doEvaluate = vi.fn(async () => {
+    const evaluator = vi.fn(async () => {
       throw new Error("Jev should not be called");
     });
-    const model = new MockEvaluationModel({ doEvaluate });
     const expenses = [{ concept: "ANY EXPENSE", amount: 12 }];
 
-    const result = await classifyExpenses(expenses, [], model);
+    const result = await classifyExpenses(expenses, [], evaluator);
 
-    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(evaluator).not.toHaveBeenCalled();
     expect(result).toEqual({ categories: [], uncategorized: expenses });
   });
 
   it("rejects more than 254 configured categories without calling Jev", async () => {
-    const doEvaluate = vi.fn(async () => {
+    const evaluator = vi.fn(async () => {
       throw new Error("Jev should not be called");
     });
-    const model = new MockEvaluationModel({ doEvaluate });
     const categories = Array.from({ length: 255 }, (_, index) => ({
       name: `Category ${index}`,
     }));
@@ -102,10 +91,26 @@ describe("classifyExpenses", () => {
     const result = await classifyExpenses(
       [{ concept: "ANY EXPENSE", amount: 12 }],
       categories,
-      model,
+      evaluator,
     );
 
-    expect(doEvaluate).not.toHaveBeenCalled();
+    expect(evaluator).not.toHaveBeenCalled();
     expect(result).toBeNull();
+  });
+
+  it("maps exhausted upstream rate limits to a temporary-unavailable error", async () => {
+    const evaluator = vi.fn(async () => {
+      throw Object.assign(new Error("Upstream provider is busy"), {
+        statusCode: 429,
+      });
+    });
+
+    await expect(
+      classifyExpenses(
+        [{ concept: "COFFEE SHOP", amount: 5 }],
+        [{ name: "Dining" }],
+        evaluator,
+      ),
+    ).rejects.toBeInstanceOf(ExpenseClassificationUnavailableError);
   });
 });

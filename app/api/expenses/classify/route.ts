@@ -7,6 +7,7 @@ import { parsePdf } from "@/lib/pdf";
 import {
   extractExpensesFromText,
   classifyExpenses,
+  ExpenseClassificationUnavailableError,
   CategoryData,
 } from "@/lib/services/expense-classifier";
 import { validatePdfUpload } from "@/lib/validation/pdf";
@@ -14,15 +15,11 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const startMs = performance.now();
-  console.log("cclog starting classify endpoint....");
-  console.log("cclog AI_GATEWAY_API_KEY:", process.env.AI_GATEWAY_API_KEY);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-
-  console.log("cclog starting validation of pdf....");
 
   const validation = await validatePdfUpload(request);
 
@@ -58,7 +55,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("cclog starting extraction of expenses....");
     const extraction = await extractExpensesFromText(text);
 
     if (!extraction) {
@@ -87,7 +83,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("cclog starting classification of expenses....");
     const classifiedExpenses = await classifyExpenses(
       extractedExpenses.expenses,
       categoriesData,
@@ -110,7 +105,7 @@ export async function POST(request: Request) {
     });
 
     console.log(
-      `cclog [expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
+      `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s`,
     );
     return NextResponse.json(
       {
@@ -121,12 +116,26 @@ export async function POST(request: Request) {
       { status: 200 },
     );
   } catch (error) {
-    console.log(
+    console.error(
       `[expenses/classify] total time: ${((performance.now() - startMs) / 1000).toFixed(2)}s (error)`,
+      error,
     );
-    console.log(error);
+
+    if (error instanceof ExpenseClassificationUnavailableError) {
+      return NextResponse.json(
+        {
+          message:
+            "Expense classification is temporarily unavailable. Please retry shortly.",
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": "15" },
+        },
+      );
+    }
+
     return NextResponse.json(
-      { message: `Unable to process PDF contents., ${error}` },
+      { message: "Unable to process PDF contents." },
       { status: 422 },
     );
   }

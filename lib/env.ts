@@ -12,6 +12,7 @@ const envSchema = z.object({
 
   // AI
   AI_GATEWAY_API_KEY: z.string().min(1, "AI_GATEWAY_API_KEY is required"),
+  JEV_API_KEY: z.string().min(1, "JEV_API_KEY is required"),
 
   // Optional
   NODE_ENV: z

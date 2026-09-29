@@ -1,8 +1,6 @@
 import {
-  experimental_evaluate as evaluate,
   generateText,
   Output,
-  type Experimental_EvaluationModel,
 } from "ai";
 
 import {
@@ -11,8 +9,8 @@ import {
   type ExtractedExpenses,
   type ExtractExpensesFromTextResult,
 } from "@/lib/validation/expenses";
+import { getJevClient } from "@/lib/services/jev";
 
-const JEV_MODEL = "typesafe-ai/jev";
 const UNCATEGORIZED_OPTION = "__uncategorized__";
 const MAX_CONFIGURED_CATEGORIES = 254;
 
@@ -102,10 +100,91 @@ ${text}`,
 
 type Expense = ExtractedExpenses["expenses"][number];
 
+type JevChoiceQuestion = {
+  type: "choice";
+  instructions: {
+    question: string;
+    guidance: string;
+  };
+  criteria: Record<string, null>;
+};
+
+type JevEvaluationRequest = {
+  state: {
+    expenses: Expense[];
+    categoryDefinitions: Record<
+      string,
+      {
+        categoryName: string;
+        description: string;
+        exampleConcepts: string[];
+      }
+    >;
+  };
+  questions: Record<string, JevChoiceQuestion>;
+};
+
+type JevEvaluationResult = {
+  answers: Record<
+    string,
+    {
+      type: "choice";
+      choice: string;
+    }
+  >;
+};
+
+export type JevEvaluator = (
+  request: JevEvaluationRequest,
+) => Promise<JevEvaluationResult>;
+
+const evaluateWithJev: JevEvaluator = async (request) => {
+  const result = await getJevClient().systemOne(request);
+  return { answers: result.answers };
+};
+
+type ErrorWithRateLimitDetails = {
+  statusCode?: unknown;
+  lastError?: unknown;
+  cause?: unknown;
+  errors?: unknown;
+};
+
+function isRateLimitError(error: unknown, seen = new Set<unknown>()): boolean {
+  if (!error || seen.has(error)) return false;
+  seen.add(error);
+
+  if (typeof error === "object") {
+    const details = error as ErrorWithRateLimitDetails;
+    if (details.statusCode === 429) return true;
+    if (isRateLimitError(details.lastError, seen)) return true;
+    if (isRateLimitError(details.cause, seen)) return true;
+    if (
+      Array.isArray(details.errors) &&
+      details.errors.some((item) => isRateLimitError(item, seen))
+    ) {
+      return true;
+    }
+  }
+
+  return (
+    error instanceof Error &&
+    (error.name.includes("RateLimit") ||
+      error.message.includes("rate_limit_exceeded"))
+  );
+}
+
+export class ExpenseClassificationUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("Expense classification is temporarily unavailable.", { cause });
+    this.name = "ExpenseClassificationUnavailableError";
+  }
+}
+
 export async function classifyExpenses(
   expenses: ExtractedExpenses["expenses"],
   categories: CategoryData[],
-  model: Experimental_EvaluationModel | string = JEV_MODEL,
+  evaluator: JevEvaluator = evaluateWithJev,
 ): Promise<ClassifiedExpenses | null> {
   if (categories.length === 0) {
     return { categories: [], uncategorized: [...expenses] };
@@ -126,7 +205,7 @@ export async function classifyExpenses(
   }
 
   const optionToCategoryIndex = new Map<string, number>();
-  const criteria: Record<
+  const categoryDefinitions: Record<
     string,
     {
       categoryName: string;
@@ -134,46 +213,54 @@ export async function classifyExpenses(
       exampleConcepts: string[];
     }
   > = {};
+  const criteria: Record<string, null> = {};
 
   categories.forEach((category, index) => {
     const option = `category_${index}`;
     optionToCategoryIndex.set(option, index);
-    criteria[option] = {
+    categoryDefinitions[option] = {
       categoryName: category.name,
       description:
         category.description?.trim() || "No description was provided.",
       exampleConcepts: category.concepts ?? [],
     };
+    criteria[option] = null;
   });
-  criteria[UNCATEGORIZED_OPTION] = {
+  categoryDefinitions[UNCATEGORIZED_OPTION] = {
     categoryName: "Uncategorized",
     description:
       "Use only when none of the configured categories accurately fits the expense.",
     exampleConcepts: [],
   };
+  criteria[UNCATEGORIZED_OPTION] = null;
 
   const questions = Object.fromEntries(
-    expenses.map((expense, index) => [
+    expenses.map((_, index) => [
       `expense_${index}`,
       {
         type: "choice" as const,
         instructions: {
-          question:
-            "Which configured category best matches this expense? Select uncategorized when none accurately fits.",
-          expense,
+          question: `Which option in categoryDefinitions best matches expenses[${index}]?`,
           guidance:
-            "Use category names, descriptions, and example concepts. Similar example concepts are strong evidence for that category.",
+            "Use the category name, description, and example concepts. Similar example concepts are strong evidence. Select __uncategorized__ only when no configured category accurately fits.",
         },
         criteria,
       },
     ]),
   );
 
-  const result = await evaluate({
-    model,
-    state: { expenses },
-    questions,
-  });
+  let result;
+  try {
+    result = await evaluator({
+      state: { expenses, categoryDefinitions },
+      questions,
+    });
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      throw new ExpenseClassificationUnavailableError(error);
+    }
+    throw error;
+  }
 
   const categoryExpenses: Expense[][] = categories.map(() => []);
   const uncategorized: Expense[] = [];
