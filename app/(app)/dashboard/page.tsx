@@ -15,7 +15,6 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ClassificationProgress } from "@/components/expenses/ClassificationProgress";
 import { ClassificationResults } from "@/components/expenses/ClassificationResults";
-import { JevSmokeTestButton } from "@/components/debug/JevSmokeTestButton";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { Category } from "@/app/(app)/config/types";
 import {
@@ -485,8 +484,6 @@ export default function Home() {
           <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </header>
-
-        <JevSmokeTestButton />
 
         <section className="rounded-xl border border-dashed border-border/70 bg-card/40 p-6">
           <label
