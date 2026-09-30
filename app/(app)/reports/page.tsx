@@ -18,7 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CategorySpendingChart } from "@/components/reports/CategorySpendingChart";
+import { YearlyTotalsChart } from "@/components/reports/YearlyTotalsChart";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
+import type { YearComparisonResponseBody } from "@/lib/year-comparison";
 import type { YearlyReportResponseBody } from "@/lib/yearly-report";
 import { reassignCategoryExpense } from "@/lib/expenses/reassign-category-expense";
 import { buildYearRange, formatYearMonth, parseYearMonth } from "@/lib/year-month";
@@ -35,7 +37,7 @@ type LoadedReport = {
   updatedAt: string | null;
 };
 
-type ReportView = "monthly" | "yearly";
+type ReportView = "monthly" | "yearly" | "compare";
 
 export default function ReportsPage() {
   const t = useTranslations("ReportsPage");
@@ -56,6 +58,11 @@ export default function ReportsPage() {
     useState<YearlyReportResponseBody | null>(null);
   const [isLoadingYearly, setIsLoadingYearly] = useState(false);
   const [loadErrorYearly, setLoadErrorYearly] = useState<string | null>(null);
+
+  const [comparison, setComparison] =
+    useState<YearComparisonResponseBody | null>(null);
+  const [isLoadingCompare, setIsLoadingCompare] = useState(false);
+  const [loadErrorCompare, setLoadErrorCompare] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSavingReportEdit, setIsSavingReportEdit] = useState(false);
@@ -328,6 +335,46 @@ export default function ReportsPage() {
     }
   }, [reportYear, t]);
 
+  const fetchComparison = useCallback(async () => {
+    setIsLoadingCompare(true);
+    setLoadErrorCompare(null);
+    setComparison(null);
+
+    try {
+      const response = await fetch("/api/expenses/compare");
+      const body = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg =
+          typeof body?.message === "string"
+            ? body.message
+            : t("compareLoadError");
+        setLoadErrorCompare(msg);
+        return;
+      }
+
+      const c = body?.comparison;
+      if (
+        !c ||
+        !Array.isArray(c.years) ||
+        !Array.isArray(c.months) ||
+        c.months.length !== 12
+      ) {
+        setLoadErrorCompare(t("compareLoadError"));
+        return;
+      }
+
+      setComparison(c as YearComparisonResponseBody);
+      trackEvent(MIXPANEL_EVENTS.COMPARE_REPORT_VIEWED, {
+        yearCount: c.years.length,
+      });
+    } catch {
+      setLoadErrorCompare(t("compareLoadError"));
+    } finally {
+      setIsLoadingCompare(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     if (reportView !== "monthly") return;
     void fetchReport();
@@ -337,6 +384,11 @@ export default function ReportsPage() {
     if (reportView !== "yearly") return;
     void fetchYearlyReport();
   }, [fetchYearlyReport, reportView]);
+
+  useEffect(() => {
+    if (reportView !== "compare") return;
+    void fetchComparison();
+  }, [fetchComparison, reportView]);
 
   const viewData: ClassifiedExpensesWithPositions | null = useMemo(() => {
     if (!report) return null;
@@ -379,10 +431,38 @@ export default function ReportsPage() {
     yearlyReport &&
     yearlyReport.categories.length === 0;
 
+  const compareEmpty =
+    reportView === "compare" &&
+    !isLoadingCompare &&
+    !loadErrorCompare &&
+    comparison &&
+    comparison.years.length === 0;
+
   const isLoading =
-    reportView === "monthly" ? isLoadingMonthly : isLoadingYearly;
+    reportView === "monthly"
+      ? isLoadingMonthly
+      : reportView === "yearly"
+        ? isLoadingYearly
+        : isLoadingCompare;
   const loadError =
-    reportView === "monthly" ? loadErrorMonthly : loadErrorYearly;
+    reportView === "monthly"
+      ? loadErrorMonthly
+      : reportView === "yearly"
+        ? loadErrorYearly
+        : loadErrorCompare;
+
+  const headerTitle =
+    reportView === "monthly"
+      ? t("title")
+      : reportView === "yearly"
+        ? t("titleYearly")
+        : t("titleCompare");
+  const headerDescription =
+    reportView === "monthly"
+      ? t("description")
+      : reportView === "yearly"
+        ? t("descriptionYearly")
+        : t("descriptionCompare");
 
   return (
     <main className="min-h-screen bg-background px-6 py-10 font-sans text-foreground">
@@ -391,14 +471,8 @@ export default function ReportsPage() {
           <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">
             {t("label")}
           </p>
-          <h1 className="text-3xl font-bold">
-            {reportView === "monthly" ? t("title") : t("titleYearly")}
-          </h1>
-          <p className="text-muted-foreground">
-            {reportView === "monthly"
-              ? t("description")
-              : t("descriptionYearly")}
-          </p>
+          <h1 className="text-3xl font-bold">{headerTitle}</h1>
+          <p className="text-muted-foreground">{headerDescription}</p>
         </header>
 
         <section className="flex flex-col gap-4 rounded-xl border border-border bg-card/40 p-6">
@@ -435,68 +509,84 @@ export default function ReportsPage() {
             >
               {t("viewYearly")}
             </button>
+            <button
+              type="button"
+              onClick={() => setReportView("compare")}
+              disabled={isLoadingCompare && reportView === "compare"}
+              aria-pressed={reportView === "compare"}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                reportView === "compare"
+                  ? "border-border bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "border-transparent bg-muted/40 text-muted-foreground hover:bg-muted/60",
+              )}
+            >
+              {t("viewCompare")}
+            </button>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="space-y-2">
-              <Label htmlFor="reports-year">{t("yearLabel")}</Label>
-              <NativeSelect
-                id="reports-year"
-                value={reportYear}
-                onChange={(e) => setReportYear(Number(e.target.value))}
-                disabled={isLoading}
-              >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </NativeSelect>
+          {reportView !== "compare" ? (
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+              <div className="space-y-2">
+                <Label htmlFor="reports-year">{t("yearLabel")}</Label>
+                <NativeSelect
+                  id="reports-year"
+                  value={reportYear}
+                  onChange={(e) => setReportYear(Number(e.target.value))}
+                  disabled={isLoading}
+                >
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+              {reportView === "monthly" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="reports-month">{t("monthLabel")}</Label>
+                    <NativeSelect
+                      id="reports-month"
+                      value={reportMonth}
+                      onChange={(e) => setReportMonth(Number(e.target.value))}
+                      disabled={isLoadingMonthly}
+                    >
+                      {monthOptions.map(({ value, label }) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0"
+                      onClick={() => goToAdjacentMonth(-1)}
+                      disabled={isLoadingMonthly}
+                      aria-label={t("previousMonth")}
+                    >
+                      <ChevronLeft className="size-4" aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0"
+                      onClick={() => goToAdjacentMonth(1)}
+                      disabled={isLoadingMonthly}
+                      aria-label={t("nextMonth")}
+                    >
+                      <ChevronRight className="size-4" aria-hidden />
+                    </Button>
+                  </div>
+                </>
+              ) : null}
             </div>
-            {reportView === "monthly" ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="reports-month">{t("monthLabel")}</Label>
-                  <NativeSelect
-                    id="reports-month"
-                    value={reportMonth}
-                    onChange={(e) => setReportMonth(Number(e.target.value))}
-                    disabled={isLoadingMonthly}
-                  >
-                    {monthOptions.map(({ value, label }) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-10 shrink-0"
-                    onClick={() => goToAdjacentMonth(-1)}
-                    disabled={isLoadingMonthly}
-                    aria-label={t("previousMonth")}
-                  >
-                    <ChevronLeft className="size-4" aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-10 shrink-0"
-                    onClick={() => goToAdjacentMonth(1)}
-                    disabled={isLoadingMonthly}
-                    aria-label={t("nextMonth")}
-                  >
-                    <ChevronRight className="size-4" aria-hidden />
-                  </Button>
-                </div>
-              </>
-            ) : null}
-          </div>
+          ) : null}
 
           {loadError ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -514,6 +604,12 @@ export default function ReportsPage() {
           {yearlyEmpty ? (
             <p className="text-sm text-muted-foreground">
               {t("yearlyEmptyState")}
+            </p>
+          ) : null}
+
+          {compareEmpty ? (
+            <p className="text-sm text-muted-foreground">
+              {t("compareEmptyState")}
             </p>
           ) : null}
         </section>
@@ -618,6 +714,12 @@ export default function ReportsPage() {
               </TableFooter>
             </Table>
           </div>
+        ) : null}
+
+        {reportView === "compare" &&
+        comparison &&
+        comparison.years.length > 0 ? (
+          <YearlyTotalsChart comparison={comparison} locale={locale} />
         ) : null}
       </div>
     </main>

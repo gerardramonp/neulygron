@@ -20,6 +20,7 @@ export const MIXPANEL_EVENTS = {
   MONTHLY_REPORT_SAVED: "Monthly Report Saved",
   MONTHLY_REPORT_VIEWED: "Monthly Report Viewed",
   YEARLY_REPORT_VIEWED: "Yearly Report Viewed",
+  COMPARE_REPORT_VIEWED: "Compare Report Viewed",
   CATEGORY_CREATED: "Category Created",
   CATEGORY_UPDATED: "Category Updated",
   CATEGORY_DELETED: "Category Deleted",
