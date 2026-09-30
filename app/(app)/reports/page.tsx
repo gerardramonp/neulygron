@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CategorySpendingChart } from "@/components/reports/CategorySpendingChart";
+import { CategoryYearChart } from "@/components/reports/CategoryYearChart";
 import { YearlyTotalsChart } from "@/components/reports/YearlyTotalsChart";
 import type { ClassifiedExpensesWithPositions } from "@/lib/validation/expenses";
 import type { YearComparisonResponseBody } from "@/lib/year-comparison";
@@ -357,6 +358,7 @@ export default function ReportsPage() {
       if (
         !c ||
         !Array.isArray(c.years) ||
+        !Array.isArray(c.categories) ||
         !Array.isArray(c.months) ||
         c.months.length !== 12
       ) {
@@ -719,7 +721,10 @@ export default function ReportsPage() {
         {reportView === "compare" &&
         comparison &&
         comparison.years.length > 0 ? (
-          <YearlyTotalsChart comparison={comparison} locale={locale} />
+          <>
+            <YearlyTotalsChart comparison={comparison} locale={locale} />
+            <CategoryYearChart comparison={comparison} locale={locale} />
+          </>
         ) : null}
       </div>
     </main>

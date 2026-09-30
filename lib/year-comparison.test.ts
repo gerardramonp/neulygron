@@ -6,9 +6,11 @@ describe("buildYearComparison", () => {
   it("returns empty years and null months when there are no reports", () => {
     const result = buildYearComparison([]);
     expect(result.years).toEqual([]);
+    expect(result.categories).toEqual([]);
     expect(result.months).toHaveLength(12);
     for (const row of result.months) {
       expect(row.byYear).toEqual({});
+      expect(row.byCategory).toEqual({});
     }
   });
 
@@ -65,5 +67,19 @@ describe("buildYearComparison", () => {
     const march = result.months[2];
     expect(march.byYear["2024"]).toBeNull();
     expect(march.byYear["2025"]).toBe(0);
+
+    expect(result.categories.map((c) => c.name)).toEqual(["Food", "Rent"]);
+
+    expect(january.byCategory.Food["2024"]).toBe(15);
+    expect(january.byCategory.Rent["2024"]).toBe(100);
+    expect(january.byCategory.Food["2025"]).toBe(20);
+    expect(january.byCategory.Rent["2025"]).toBe(0);
+
+    expect(february.byCategory.Food["2024"]).toBeNull();
+    expect(february.byCategory.Rent["2025"]).toBeNull();
+
+    expect(march.byCategory.Food["2024"]).toBeNull();
+    expect(march.byCategory.Food["2025"]).toBe(0);
+    expect(march.byCategory.Rent["2025"]).toBe(0);
   });
 });
